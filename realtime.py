@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import sys
 from properties import *
@@ -71,20 +72,20 @@ class RealTime(object):
         else: 
             print "Not a valid spectra choice"
 
-        print kick_strength
         if np.isclose(kick_strength,0.0):
             print "Kick = 0, you are trying to FFT the wrong file"
             print "Try to change dipole direction!"
             sys.exit(0)
 
-        dipole -= dipole[0]
+        dipole = dipole - dipole[0]
         damp = np.exp(-(self.time-self.time[0])/float(damp_const))
         dipole = dipole * damp
+        
 
         fw = fft(dipole)
         fw_re = np.real(fw)
         fw_im = np.imag(fw)
-        
+       
         n = len(fw_re)
         timestep = self.time[1] - self.time[0]
         self.frequency = fftfreq(n,d=timestep)*2.0*np.pi
@@ -100,18 +101,15 @@ class RealTime(object):
     
  
 if __name__ == '__main__':
-    x = RealTime('ssdmo_x')
+    x = RealTime('he')
     x.fft(dipole_direction='x',damp_const=800)
-    y = RealTime('ssdmo_y')
-    y.fft(dipole_direction='y',damp_const=800)
-    z = RealTime('ssdmo_z')
-    z.fft(dipole_direction='z',damp_const=800)
     import matplotlib.pyplot as plt
-    #plt.plot(cd.time,cd.electricDipole.x)
-    plt.plot(x.frequency*27.2114,x.fourier+y.fourier+z.fourier)
-    plt.xlim(4,10)
-    plt.savefig('ssdmo.pdf')
-    #plt.show()
+    #plt.plot(x.time,x.electricDipole.x)
+    #plt.plot(x.time,x.energy)
+    plt.plot(x.frequency*27.2114,x.fourier)
+    plt.xlim(60,80)
+    #plt.savefig('he.pdf')
+    plt.show()
     
             
 

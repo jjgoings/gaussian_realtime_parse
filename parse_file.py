@@ -96,22 +96,23 @@ def clean_data(self):
         try:
             # If it is an array, remove MMUT steps, and grab its length 
            #FIXME Not sure if MMUT steps are actually double printed in latest
-            self.__dict__[x] = np.delete(self.__dict__[x],
-                list(range(int(self.mmut_restart)-1, 
-                self.__dict__[x].shape[0], 
-                int(self.mmut_restart))), 
-                axis=0)
+           # self.__dict__[x] = np.delete(self.__dict__[x],
+           #     list(range(int(self.mmut_restart)-1, 
+           #     self.__dict__[x].shape[0], 
+           #     int(self.mmut_restart))), 
+           #     axis=0)
             lengths.append(get_length(self.__dict__[x]))
         except AttributeError:
             try:
                 # Dipoles, fields, etc., are objects and we want their x/y/z
                 for q in ['_x','_y','_z']:
-                    self.__dict__[x].__dict__[q] = \
-                        np.delete(self.__dict__[x].__dict__[q],
-                        list(range(int(self.mmut_restart)-1, 
-                        self.__dict__[x].__dict__[q].shape[0], 
-                        int(self.mmut_restart))), 
-                        axis=0)
+               #FIXME Again, not sure about MMUT duplicates
+               #     self.__dict__[x].__dict__[q] = \
+               #         np.delete(self.__dict__[x].__dict__[q],
+               #         list(range(int(self.mmut_restart)-1, 
+               #         self.__dict__[x].__dict__[q].shape[0], 
+               #         int(self.mmut_restart))), 
+               #         axis=0)
                     lengths.append(get_length(self.__dict__[x].__dict__[q]))
             except:
                 print "Unknown data type: "+str(x)+str(q)
