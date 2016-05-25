@@ -19,6 +19,9 @@ class RealTime(object):
         energy:          Array containing energy (au)
         frequency:       Array containing frequencies from *time* (au)
         fourier:         Array containing fourier transformed signal (au)
+        propertyarrays:  List containing names of properties stored as arrays.
+        truncate:        Method to truncate propertyarrays to a given length
+        mmut_restart:    Integer containing how often MMUT restarts
     """
 
     def __init__(self, name):
@@ -34,6 +37,16 @@ class RealTime(object):
         self.energy         = None
         self.frequency      = None
         self.fourier        = None
+        # TODO May want to look at a better way of defining which attributes are
+        # arrays instead of just hard-coding them in.
+        self.propertyarrays = ['electricDipole',
+                               'magneticDipole',
+                               'electricField',
+                               'magneticField',
+                               'time',
+                               'energy']
+        self.truncate       = truncate
+        self.min_length     = None
         self.mmut_restart   = 10000000000 # e.g. never restart
 
         # Call parser 
@@ -42,7 +55,10 @@ class RealTime(object):
         # Make all arrays consistent length
         clean_data(self)
 
-    def fft(self,dipole_direction='x',spectra='abs',damp_const=150):
+    def fourier_tx(self,dipole_direction='x',spectra='abs',damp_const=150):
+        """Return a set of frequencies and fourier transforms of a time
+        dependent signal, e.g. return fourier transform of the x component of
+        the time varying electric dipole"""
         from scipy.fftpack import fft, fftfreq 
         # Choose which signal to FFT
         if spectra.lower() == 'abs':  
@@ -101,13 +117,13 @@ class RealTime(object):
     
  
 if __name__ == '__main__':
-    x = RealTime('he')
-    x.fft(dipole_direction='x',damp_const=800)
+    x = RealTime('hg')
+    #x.fourier_tx(dipole_direction='x',damp_const=500)
     import matplotlib.pyplot as plt
-    #plt.plot(x.time,x.electricDipole.x)
+    plt.plot(x.time,x.electricDipole.x)
     #plt.plot(x.time,x.energy)
-    plt.plot(x.frequency*27.2114,x.fourier)
-    plt.xlim(60,80)
+    #plt.plot(x.frequency*27.2114,x.fourier)
+    #plt.xlim(0,8)
     #plt.savefig('he.pdf')
     plt.show()
     

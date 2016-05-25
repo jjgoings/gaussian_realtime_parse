@@ -84,53 +84,58 @@ def clean_data(self):
             return len(data) 
         else:
             return 1e100
-    #TODO: replace attributes with self.__dict__ but remove 'logfile'
-    attributes = ['electricDipole',
-                  'magneticDipole',
-                  'electricField',
-                  'magneticField',
-                  'time',
-                  'energy']
+    # if doMMUT == True, we will delete duplicate data from MMUT restart
+    doMMUT = True 
     lengths = []
-    for x in attributes:
-        try:
-            # If it is an array, remove MMUT steps, and grab its length 
+    for x in self.propertyarrays:
+       try:
+           # If it is an array, remove MMUT steps, and grab its length 
            #FIXME Not sure if MMUT steps are actually double printed in latest
-           # self.__dict__[x] = np.delete(self.__dict__[x],
-           #     list(range(int(self.mmut_restart)-1, 
-           #     self.__dict__[x].shape[0], 
-           #     int(self.mmut_restart))), 
-           #     axis=0)
-            lengths.append(get_length(self.__dict__[x]))
-        except AttributeError:
-            try:
-                # Dipoles, fields, etc., are objects and we want their x/y/z
-                for q in ['_x','_y','_z']:
-               #FIXME Again, not sure about MMUT duplicates
-               #     self.__dict__[x].__dict__[q] = \
-               #         np.delete(self.__dict__[x].__dict__[q],
-               #         list(range(int(self.mmut_restart)-1, 
-               #         self.__dict__[x].__dict__[q].shape[0], 
-               #         int(self.mmut_restart))), 
-               #         axis=0)
-                    lengths.append(get_length(self.__dict__[x].__dict__[q]))
-            except:
-                print "Unknown data type: "+str(x)+str(q)
+           if (doMMUT):
+               self.__dict__[x] = np.delete(self.__dict__[x],
+                   list(range(int(self.mmut_restart)-1, 
+                   self.__dict__[x].shape[0], 
+                   int(self.mmut_restart))), 
+                   axis=0)
+           lengths.append(get_length(self.__dict__[x]))
+       except AttributeError:
+           try:
+               # Dipoles, fields, etc., are objects and we want their x/y/z
+               for q in ['_x','_y','_z']:
+                   #FIXME Again, not sure about MMUT duplicates
+                   if (doMMUT):
+                       self.__dict__[x].__dict__[q] = \
+                           np.delete(self.__dict__[x].__dict__[q],
+                           list(range(int(self.mmut_restart)-1, 
+                           self.__dict__[x].__dict__[q].shape[0], 
+                           int(self.mmut_restart))), 
+                           axis=0)
+                   lengths.append(get_length(self.__dict__[x].__dict__[q]))
+           except:
+               #print "Unknown data type: "+str(x)+str(q)
+               pass
 
-    min_length = min(lengths)
+    self.min_length = min(lengths)
+    # truncate all the arrays so they are the same length 
+    truncate(self,self.min_length)
 
-    for x in attributes:
-        try:
-            # If it is an array, truncate its length 
-            self.__dict__[x] = self.__dict__[x][:min_length]
-        except TypeError:
-            try:
-                # Dipoles, fields, etc., are objects and we want their x/y/z
-                for q in ['_x','_y','_z']:
-                    self.__dict__[x].__dict__[q] = \
-                        self.__dict__[x].__dict__[q][:min_length]
-            except:
-                print "Unknown data type: "+str(x)+str(q)
+def truncate(self,length):
+    """ Truncates the property arrays to a given *length* (integer) """
+    for x in self.propertyarrays:
+       try:
+           # If it is an array, truncate its length 
+           self.__dict__[x] = self.__dict__[x][:length]
+       except TypeError:
+           try:
+               # Dipoles, fields, etc., are objects and we want their x/y/z
+               for q in ['_x','_y','_z']:
+                   self.__dict__[x].__dict__[q] = \
+                       self.__dict__[x].__dict__[q][:length]
+           except:
+               #print "Unknown data type: "+str(x)+str(q)
+               pass
+
+
 
 
 
