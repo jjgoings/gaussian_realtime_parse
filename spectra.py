@@ -82,8 +82,8 @@ class Spectra(object):
         jdx = np.where((self.spectra[idx] >= thresh))
         kdx = idx[0][jdx[0]] # indices of peaks matching criteria
         print "First "+str(number)+" peaks (eV) found: "
-        if number > len(idx[0]):
-            number = len(idx[0])
+        if number > len(kdx):
+            number = len(kdx)
         for i in xrange(number): 
             print "{0:.2f}".format(self.frequency[kdx][i]*27.2114)
         
@@ -99,6 +99,6 @@ if __name__ == '__main__':
     #                  s='abs',auto=True)
     spectra = Spectra(x='mg-td',auto=True)
     spectra.x.test()
-#    spectra.peaks()
-    spectra.plot(xlim=[0,30])
+    spectra.peaks()
+    spectra.plot(xlim=[0,1500])
 
