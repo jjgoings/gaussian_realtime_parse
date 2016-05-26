@@ -19,6 +19,7 @@ def parse_file(self):
     bZ  = []
     t   = []
     en  = []
+    #FIXME: FOR H2+ RABI ONLY
     HOMO= []
     LUMO= []
    
@@ -45,7 +46,7 @@ def parse_file(self):
         elif line[1:27] == 'No external field applied.':
             self.envelope['Field']     = False
         elif line[1:34] == 'Alpha orbital occupation numbers:': 
-            # ONLY FOR H2+ RABI
+            #FIXME ONLY FOR H2+ RABI
             HOMO.append(float(lines[idx+1].split()[0])) 
             LUMO.append(float(lines[idx+1].split()[1])) 
         elif line[1:7] == 'Time =':
@@ -97,6 +98,7 @@ def parse_file(self):
         self.time             = np.asarray(t)
     if(en):
         self.energy           = np.asarray(en)
+    #FIXME FOR H2+ RABI ONLY
     if(HOMO):
         self.HOMO             = np.asarray(HOMO)
     if(LUMO):
