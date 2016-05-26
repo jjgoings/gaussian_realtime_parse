@@ -6,10 +6,11 @@ class Spectra(object):
     """Return a spectra object that can plot the total absorption spectrum or
     circular dichroism spectra for a given system. Can accept x,y,and z RT-TDDFT
     log files"""
-    def __init__(self,x=None,y=None,z=None,s='abs',d=150):
+    def __init__(self,x=None,y=None,z=None,s='abs',d=150,zp=None,auto=False):
 
         self.spectra_type = s
         self.damp_const   = d
+        self.zero_pad     = zp
 
         # Load all the RealTime objects
         self.directions = []
@@ -24,11 +25,12 @@ class Spectra(object):
             self.directions.append('z')
 
         # Enforce consistent data lengths
-        self.align_data
+        self.align_data()
  
         # Do the isotropic fourier transform 
         for q in self.directions:
-            self.__dict__[q].fourier_tx(q,self.spectra_type,self.damp_const)
+            self.__dict__[q].fourier_tx(q,self.spectra_type,self.damp_const,
+                self.zero_pad,auto=auto)
 
 
     def plot(self,xlim=[0,15],ylim=None):
@@ -45,11 +47,9 @@ class Spectra(object):
         ax.set_xlim(xlim)
         if not ylim:
             if self.spectra_type == 'abs':
-                ax.set_ylim([0,5])
+                ax.set_ylim([0,4])
             elif self.spectra_type == 'ecd':
-                ax.set_ylim([-5,5])
-      
-       
+                ax.set_ylim([-400,400])
         plt.show()
 
     def align_data(self):
@@ -62,16 +62,19 @@ class Spectra(object):
             lengths.append(self.z.min_length) 
         min_length = min(lengths)
         if self.x:
-            self.x.truncate(min_length)
+            self.x.truncate(self.x,min_length)
         if self.y:
-            self.y.truncate(min_length)
+            self.y.truncate(self.y,min_length)
         if self.z:
-            self.z.truncate(min_length)
+            self.z.truncate(self.z,min_length)
 
          
 
 
 if __name__ == '__main__':
-    spectra = Spectra(x='cd',s='abs',d=1000)
+    spectra = Spectra(x='AuH-x2c_xx',
+                      y='AuH-x2c_yy',
+                      z='AuH-x2c_zz',
+                      s='abs',auto=True)
     spectra.plot()
 

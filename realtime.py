@@ -29,6 +29,7 @@ class RealTime(object):
         # Initialize data
         self.name           = name
         self.logfile        = name+'.log'
+        self.envelope       = {}
         self.electricDipole = ElectricDipole()
         self.magneticDipole = MagneticDipole()
         self.electricField  = ElectricField()
@@ -55,7 +56,8 @@ class RealTime(object):
         # Make all arrays consistent length
         clean_data(self)
 
-    def fourier_tx(self,dipole_direction='x',spectra='abs',damp_const=150):
+    def fourier_tx(self,dipole_direction='x',spectra='abs',damp_const=150,
+                    zero_pad=None,auto=False):
         """Return a set of frequencies and fourier transforms of a time
         dependent signal, e.g. return fourier transform of the x component of
         the time varying electric dipole"""
@@ -93,11 +95,34 @@ class RealTime(object):
             print "Try to change dipole direction!"
             sys.exit(0)
 
-        dipole = dipole - dipole[0]
-        damp = np.exp(-(self.time-self.time[0])/float(damp_const))
-        dipole = dipole * damp
-        
+        if (auto):
+            dt = self.time[1] - self.time[0]
+            damp_const = self.time[-1]/20.0
+            #print "Damp const = ", damp_const
+            print "Line width (eV) = ", (2.0/damp_const)*27.2114
+             
+            dipole = dipole - dipole[0]
+            damp = np.exp(-(self.time-self.time[0])/float(damp_const))
+            dipole = dipole * damp
 
+            resolution = 0.025 #eV
+            zero_pad   = ((2.0*np.pi*27.2114)/(resolution*dt)) - len(self.time)
+            if(zero_pad < 0.0):
+                zero_pad = 0.0
+            print "Number zeros = ", zero_pad
+
+            zero = np.linspace(0,0,zero_pad)
+            dipole = np.hstack((dipole,zero))
+
+        else:
+            dipole = dipole - dipole[0]
+            damp = np.exp(-(self.time-self.time[0])/float(damp_const))
+            dipole = dipole * damp
+
+            if zero_pad:
+                zero = np.linspace(0,0,zero_pad)
+                dipole = np.hstack((dipole,zero))
+    
         fw = fft(dipole)
         fw_re = np.real(fw)
         fw_im = np.imag(fw)
@@ -112,20 +137,65 @@ class RealTime(object):
         elif spectra.lower() == 'ecd':
             self.fourier = \
                 (17.32*fw_re)/(np.pi*kick_strength)
+
+    def test(self):
+        self.check_energy()
+        self.check_field()
+        pass
+
+    def check_energy(self):
+        dE = abs(max(self.energy) - min(self.energy)) 
+        t_maxE = self.time[np.argmax(self.energy)]
+        t_minE = self.time[np.argmin(self.energy)]
+        print "Energy conserved to: ", "{0:.2e}".format(dE), " au"
+        print "Max energy at time: ", t_maxE, " au"
+        print "Min energy at time: ", t_minE, " au"
+
+    def check_field(self):
+        if self.envelope['Field']:
+            print "Checking the external field for: ", self.envelope['Envelope']
+            print "Ex field matches: ", np.allclose(self.electricField.x,
+                self.expected_field('Ex'))
+            print "Ey field matches: ", np.allclose(self.electricField.y,
+                self.expected_field('Ey'))
+            print "Ez field matches: ", np.allclose(self.electricField.z,
+                self.expected_field('Ez'))
+            print "Bx field matches: ", np.allclose(self.magneticField.x,
+                self.expected_field('Bx'))
+            print "By field matches: ", np.allclose(self.magneticField.y,
+                self.expected_field('By'))
+            print "Bz field matches: ", np.allclose(self.magneticField.z,
+                self.expected_field('Bz'))
+        else:
+            print "No external field applied"
+
+    def expected_field(self,component):
+        Time  = self.time
+        TOn   = self.envelope['TOn']
+        TOff  = self.envelope['TOff']
+        Omega = self.envelope['Frequency']
+        Phase = self.envelope['Phase']
+        OmegT = Omega*(Time - TOn) + Phase
+        if self.envelope['Envelope'] == 'Constant':
+            field = np.zeros_like(self.time)
+            # Step function, depending on how TOn and TOff are defined
+            idx = np.where((self.time >= TOn) & (self.time < TOff))
+            field[idx] = self.envelope[component]*np.cos(OmegT)
+        else:
+            print "Not a valid field!"
+            sys.exit(0) 
+        return field
+            
+             
+
+      
         
 
     
  
 if __name__ == '__main__':
     x = RealTime('hg')
-    #x.fourier_tx(dipole_direction='x',damp_const=500)
-    import matplotlib.pyplot as plt
-    plt.plot(x.time,x.electricDipole.x)
-    #plt.plot(x.time,x.energy)
-    #plt.plot(x.frequency*27.2114,x.fourier)
-    #plt.xlim(0,8)
-    #plt.savefig('he.pdf')
-    plt.show()
+    x.test()
     
             
 

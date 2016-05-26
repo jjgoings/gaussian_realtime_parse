@@ -21,7 +21,24 @@ def parse_file(self):
     en  = []
    
     for idx, line in enumerate(lines):
-        if line[1:7] == 'Time =':
+        if line[1:26] == 'External field Parameters':
+            self.envelope['Field']     = True
+            self.envelope['Envelope']  = lines[idx+1].split()[2]   # string
+            self.envelope['Gauge']     = lines[idx+2].split()[2]   # string 
+            self.envelope['Ex']        = float(lines[idx+3].split()[2])  # au 
+            self.envelope['Ey']        = float(lines[idx+4].split()[2])  # au
+            self.envelope['Ez']        = float(lines[idx+5].split()[2])  # au
+            self.envelope['Bx']        = float(lines[idx+6].split()[2])  # au
+            self.envelope['By']        = float(lines[idx+7].split()[2])  # au
+            self.envelope['Bz']        = float(lines[idx+8].split()[2])  # au
+            self.envelope['Frequency'] = float(lines[idx+9].split()[2])  # au
+            self.envelope['Phase']     = float(lines[idx+11].split()[2]) # au
+            self.envelope['TOn']       = float(lines[idx+12].split()[2]) # au
+            self.envelope['TOff']      = float(lines[idx+13].split()[2]) # au
+            self.envelope['Terms']     = lines[idx+14].split()[3:] # mult str
+        elif line[1:27] == 'No external field applied.':
+            self.envelope['Field']     = False
+        elif line[1:7] == 'Time =':
             time = line.split()
             t.append(float(time[2]))
         elif line[1:22] == 'Dipole Moment (Debye)': 
