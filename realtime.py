@@ -95,18 +95,20 @@ class RealTime(object):
             print "Try to change dipole direction!"
             sys.exit(0)
 
-        if (auto):
+        if auto:
             dt = self.time[1] - self.time[0]
-            damp_const = self.time[-1]/20.0
+            damp_const = self.time[-1]/10.0
             #print "Damp const = ", damp_const
-            print "Line width (eV) = ", (2.0/damp_const)*27.2114
+            print "Line width (eV) = ", \
+                "{0:.3f}".format((2.0/damp_const)*27.2114)
              
             dipole = dipole - dipole[0]
             damp = np.exp(-(self.time-self.time[0])/float(damp_const))
             dipole = dipole * damp
 
             resolution = 0.025 #eV
-            zero_pad   = ((2.0*np.pi*27.2114)/(resolution*dt)) - len(self.time)
+            zero_pad   = int(np.floor((2.0*np.pi*27.2114)/(resolution*dt))\
+                - len(self.time))
             if(zero_pad < 0.0):
                 zero_pad = 0.0
             print "Number zeros = ", zero_pad
@@ -128,15 +130,20 @@ class RealTime(object):
         fw_im = np.imag(fw)
        
         n = len(fw_re)
+        m = n / 2
         timestep = self.time[1] - self.time[0]
         self.frequency = fftfreq(n,d=timestep)*2.0*np.pi
-        
+
         if spectra.lower() == 'abs':
             self.fourier = \
                 -(4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength)
         elif spectra.lower() == 'ecd':
             self.fourier = \
                 (17.32*fw_re)/(np.pi*kick_strength)
+
+        # Grab positive values only
+        self.frequency = self.frequency[1:m]
+        self.fourier   = self.fourier[1:m]
 
     def test(self):
         self.check_energy()
@@ -185,7 +192,7 @@ class RealTime(object):
             print "Not a valid field!"
             sys.exit(0) 
         return field
-            
+
              
 
       
@@ -194,8 +201,11 @@ class RealTime(object):
     
  
 if __name__ == '__main__':
-    x = RealTime('hg')
-    x.test()
+    x = RealTime('h2')
+    import matplotlib.pyplot as plt 
+    plt.plot(x.time,x.electricField.z)
+    plt.show()
+    #x.test()
     
             
 

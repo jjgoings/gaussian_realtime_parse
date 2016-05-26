@@ -7,6 +7,12 @@ class Spectra(object):
     circular dichroism spectra for a given system. Can accept x,y,and z RT-TDDFT
     log files"""
     def __init__(self,x=None,y=None,z=None,s='abs',d=150,zp=None,auto=False):
+        self.spectra = None
+        self.frequency = None
+
+        self.x = None
+        self.y = None
+        self.z = None
 
         self.spectra_type = s
         self.damp_const   = d
@@ -32,18 +38,18 @@ class Spectra(object):
             self.__dict__[q].fourier_tx(q,self.spectra_type,self.damp_const,
                 self.zero_pad,auto=auto)
 
+        self.spectra = np.zeros_like(self.__dict__[self.directions[0]].fourier)
+        for q in self.directions:
+            self.frequency = self.__dict__[q].frequency
+            self.spectra += self.__dict__[q].fourier
+
 
     def plot(self,xlim=[0,15],ylim=None):
         toEV = 27.2114 
         import matplotlib.pyplot as plt
         ax = plt.subplot(111)
        
-        S = np.zeros_like(self.__dict__[self.directions[0]].fourier)
-        for q in self.directions:
-            frequency = self.__dict__[q].frequency
-            S += self.__dict__[q].fourier
-
-        ax.plot(frequency*toEV,S)
+        ax.plot(self.frequency*toEV,self.spectra)
         ax.set_xlim(xlim)
         if not ylim:
             if self.spectra_type == 'abs':
@@ -68,13 +74,25 @@ class Spectra(object):
         if self.z:
             self.z.truncate(self.z,min_length)
 
+    def peaks(self,number=3):
+        """ Return the peaks from the Fourier transform"""
+        from scipy.signal import argrelextrema as pks
+        idx = pks(self.spectra,np.greater,order=5)
+        print "First "+str(number)+" peaks (eV) found: "
+        for i in xrange(number): 
+            print "{0:.2f}".format(self.frequency[idx][i]*27.2114)
+        
+            
+
          
 
 
 if __name__ == '__main__':
-    spectra = Spectra(x='AuH-x2c_xx',
-                      y='AuH-x2c_yy',
-                      z='AuH-x2c_zz',
-                      s='abs',auto=True)
+    #spectra = Spectra(x='AuH-x2c_xx',
+    #                  y='AuH-x2c_yy',
+    #                  z='AuH-x2c_zz',
+    #                  s='abs',auto=True)
+    spectra = Spectra(x='hg',auto=True)
+    spectra.peaks(10)
     spectra.plot()
 
