@@ -19,6 +19,8 @@ def parse_file(self):
     bZ  = []
     t   = []
     en  = []
+    HOMO= []
+    LUMO= []
    
     for idx, line in enumerate(lines):
         if line[1:26] == 'External field Parameters':
@@ -34,10 +36,18 @@ def parse_file(self):
             self.envelope['Frequency'] = float(lines[idx+9].split()[2])  # au
             self.envelope['Phase']     = float(lines[idx+11].split()[2]) # au
             self.envelope['TOn']       = float(lines[idx+12].split()[2]) # au
-            self.envelope['TOff']      = float(lines[idx+13].split()[2]) # au
+            # Exception to fix user setting Toff to obscenely large values
+            try:
+                self.envelope['TOff']      = float(lines[idx+13].split()[2]) # au
+            except ValueError:
+                self.envelope['TOff']      = 100000000.000 # au
             self.envelope['Terms']     = lines[idx+14].split()[3:] # mult str
         elif line[1:27] == 'No external field applied.':
             self.envelope['Field']     = False
+        elif line[1:34] == 'Alpha orbital occupation numbers:': 
+            # ONLY FOR H2+ RABI
+            HOMO.append(float(lines[idx+1].split()[0])) 
+            LUMO.append(float(lines[idx+1].split()[1])) 
         elif line[1:7] == 'Time =':
             time = line.split()
             t.append(float(time[2]))
@@ -87,6 +97,10 @@ def parse_file(self):
         self.time             = np.asarray(t)
     if(en):
         self.energy           = np.asarray(en)
+    if(HOMO):
+        self.HOMO             = np.asarray(HOMO)
+    if(LUMO):
+        self.LUMO             = np.asarray(LUMO)
 
 def clean_data(self):
     """Make all the data arrays the same length, in case the log file

@@ -45,10 +45,15 @@ class RealTime(object):
                                'electricField',
                                'magneticField',
                                'time',
+                               'HOMO',
+                               'LUMO',
                                'energy']
         self.truncate       = truncate
         self.min_length     = None
         self.mmut_restart   = 10000000000 # e.g. never restart
+        # ONLY FOR H2+ RABI
+        self.HOMO           = None
+        self.LUMO           = None
 
         # Call parser 
         parse_file(self)
@@ -201,9 +206,10 @@ class RealTime(object):
     
  
 if __name__ == '__main__':
-    x = RealTime('h2')
+    x = RealTime('H2_Rabi')
     import matplotlib.pyplot as plt 
-    plt.plot(x.time,x.electricField.z)
+ #   plt.plot(x.time,x.energy)
+    plt.plot(x.time,x.HOMO)
     plt.show()
     #x.test()
     

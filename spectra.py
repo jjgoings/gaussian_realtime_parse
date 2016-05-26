@@ -78,12 +78,12 @@ class Spectra(object):
         """ Return the peaks from the Fourier transform"""
         from scipy.signal import argrelextrema as pks
         # find all peak indices [idx], and remove those below thresh [jdx]
-        idx = pks(self.spectra,np.greater,order=10)
+        idx = pks(self.spectra,np.greater,order=5)
         jdx = np.where((self.spectra[idx] >= thresh))
         kdx = idx[0][jdx[0]] # indices of peaks matching criteria
-        print "First "+str(number)+" peaks (eV) found: "
         if number > len(kdx):
             number = len(kdx)
+        print "First "+str(number)+" peaks (eV) found: "
         for i in xrange(number): 
             print "{0:.2f}".format(self.frequency[kdx][i]*27.2114)
         
@@ -99,6 +99,6 @@ if __name__ == '__main__':
     #                  s='abs',auto=True)
     spectra = Spectra(x='mg-td',auto=True)
     spectra.x.test()
-    spectra.peaks()
+    spectra.peaks(9)
     spectra.plot(xlim=[0,1500])
 
