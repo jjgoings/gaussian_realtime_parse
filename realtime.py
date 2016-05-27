@@ -102,11 +102,16 @@ class RealTime(object):
             sys.exit(0)
 
         if auto:
-            dt = self.time[1] - self.time[0]
+            dt = self.time[2] - self.time[1]
             damp_const = self.time[-1]/10.0
+            line_width = (2.0/damp_const)*27.2114
             #print "Damp const = ", damp_const
-            print "Line width (eV) = ", \
-                "{0:.3f}".format((2.0/damp_const)*27.2114)
+            if line_width > 2.0:
+                print "Large line width: ", "{0:.3f}".format(line_width)," eV"
+                print "Spectra not meaningful. Exiting..."
+                sys.exit(0)
+            else:
+                print "Line width (eV) = ", "{0:.3f}".format(line_width)
              
             dipole = dipole - dipole[0]
             damp = np.exp(-(self.time-self.time[0])/float(damp_const))
@@ -137,8 +142,11 @@ class RealTime(object):
        
         n = len(fw_re)
         m = n / 2
-        timestep = self.time[1] - self.time[0]
+        timestep = self.time[2] - self.time[1]
         self.frequency = fftfreq(n,d=timestep)*2.0*np.pi
+        if np.any(np.isinf(self.frequency)) or np.any(np.isnan(self.frequency)):
+            print "Check your dT: frequency contains NaNs and/or Infs!"
+            sys.exit(0)
 
         if spectra.lower() == 'abs':
             self.fourier = \
@@ -164,21 +172,21 @@ class RealTime(object):
         print "Max energy at time: ", t_maxE, " au"
         print "Min energy at time: ", t_minE, " au"
 
-    def check_field(self):
+    def check_field(self,tol=1e-6):
         if self.envelope['Field']:
             print "Checking the external field for: ", self.envelope['Envelope']
             print "Ex field matches: ", np.allclose(self.electricField.x,
-                self.expected_field('Ex'))
+                self.expected_field('Ex'),atol=tol)
             print "Ey field matches: ", np.allclose(self.electricField.y,
-                self.expected_field('Ey'))
+                self.expected_field('Ey'),atol=tol)
             print "Ez field matches: ", np.allclose(self.electricField.z,
-                self.expected_field('Ez'))
-            print "Bx field matches: ", np.allclose(self.magneticField.x,
-                self.expected_field('Bx'))
-            print "By field matches: ", np.allclose(self.magneticField.y,
-                self.expected_field('By'))
-            print "Bz field matches: ", np.allclose(self.magneticField.z,
-                self.expected_field('Bz'))
+                self.expected_field('Ez'),atol=tol)
+           # print "Bx field matches: ", np.allclose(self.magneticField.x,
+           #     self.expected_field('Bx'),atol=tol)
+           # print "By field matches: ", np.allclose(self.magneticField.y,
+           #     self.expected_field('By'),atol=tol)
+           # print "Bz field matches: ", np.allclose(self.magneticField.z,
+           #     self.expected_field('Bz'),atol=tol)
         else:
             print "No external field applied"
 
@@ -189,11 +197,37 @@ class RealTime(object):
         Omega = self.envelope['Frequency']
         Phase = self.envelope['Phase']
         OmegT = Omega*(Time - TOn) + Phase
+        field = np.zeros_like(self.time)
         if self.envelope['Envelope'] == 'Constant':
-            field = np.zeros_like(self.time)
             # Step function, depending on how TOn and TOff are defined
-            idx = np.where((self.time >= TOn) & (self.time < TOff))
-            field[idx] = self.envelope[component]*np.cos(OmegT)
+            idx = np.where((Time >= TOn) & (Time < TOff))
+            # in GDV OmegT begins at TOn as well
+            field[idx] = self.envelope[component]*np.cos(OmegT[idx])
+        elif self.envelope['Envelope'] == 'Linear':
+            TMax = (2.0*np.pi)/Omega
+            # Linearly ramp off to zero 
+            idx = np.where((Time >= TOn) & (Time <= TOff) & \
+                (Time > TOff-TMax))
+            field[idx] = self.envelope[component]*\
+                         ((TOff-Time[idx])/TMax)*np.cos(OmegT[idx])
+            # Constant envelope 
+            idx = np.where((Time >= TOn) & (Time <= TOff) & \
+                (Time > TOn+TMax) & (Time <= TOff-TMax))
+            field[idx] = self.envelope[component]*np.cos(OmegT[idx])
+            # Linearly ramp up to maximum in first cycle
+            idx = np.where((Time >= TOn) & (Time <= TOff) & \
+                (Time <= TOn+TMax))
+            field[idx] = self.envelope[component]*\
+                         ((Time[idx]-TOn)/TMax)*np.cos(OmegT[idx])
+        elif self.envelope['Envelope'] == 'Gaussian':
+            idx = np.where((Time >= TOn) & (Time < TOff))
+            #FIXME: Sigma is hard-coded for testing...need to print it in the 
+            # output and then search for it during parsing.
+            Sigma = 0.01
+            TCntr = np.sqrt(np.log(1000.0))/Sigma
+            field[idx] = self.envelope[component]*\
+                         np.cos(OmegT[idx])*\
+                         np.exp(-(Sigma*(Time[idx]-TCntr))**2)
         else:
             print "Not a valid field!"
             sys.exit(0) 
@@ -207,12 +241,16 @@ class RealTime(object):
     
  
 if __name__ == '__main__':
-    x = RealTime('H2_Rabi')
+    x = RealTime('test_x')
     import matplotlib.pyplot as plt 
- #   plt.plot(x.time,x.energy)
-    plt.plot(x.time,x.HOMO)
-    plt.show()
+    #plt.plot(x.time,x.expected_field('Ex'),label='expected',lw=2,color='gray')
+    #plt.plot(x.time,x.electricField.x,label='actual',ls='--',lw=2,color='black')
+    #plt.plot(x.time,x.energy)
+    #plt.plot(x.time,x.energy)
+    x.fourier_tx()
+    #plt.legend()
     #x.test()
+    #plt.show()
     
             
 

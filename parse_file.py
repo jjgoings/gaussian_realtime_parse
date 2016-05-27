@@ -118,7 +118,7 @@ def clean_data(self):
         else:
             return 1e100
     # if doMMUT == True, we will delete duplicate data from MMUT restart
-    doMMUT = True 
+    doMMUT = False 
     lengths = []
     for x in self.propertyarrays:
        try:

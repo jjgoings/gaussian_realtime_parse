@@ -97,8 +97,9 @@ if __name__ == '__main__':
     #                  y='AuH-x2c_yy',
     #                  z='AuH-x2c_zz',
     #                  s='abs',auto=True)
-    spectra = Spectra(x='mg-td',auto=True)
+    spectra = Spectra(x='test_x',y='test_y',auto=True)
     spectra.x.test()
+    spectra.y.test()
     spectra.peaks(9)
-    spectra.plot(xlim=[0,1500])
+    spectra.plot(xlim=[0,30])
 
