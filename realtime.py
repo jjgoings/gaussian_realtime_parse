@@ -15,6 +15,8 @@ class RealTime(object):
         magneticDipole:  Object containing x, y, z magnetic dipole moments (au)
         electricField:   Object containing x, y, z electric field strengths (au)
         magneticField:   Object containing x, y, z magnetic field strengths (au)
+        iops:            Dict containing IOps for 512 
+        envelope:        Dict containing field parameters printed in logfile
         time:            Array containing time (au)
         energy:          Array containing energy (au)
         frequency:       Array containing frequencies from *time* (au)
@@ -30,10 +32,25 @@ class RealTime(object):
         self.name           = name
         self.logfile        = name+'.log'
         self.envelope       = {}
+        self.iops           = {'132':['0'],
+                               '134':['0'], 
+                               '177':['0'], 
+                               '136':['0'], 
+                               '137':['0'], 
+                               '138':['0'], 
+                               '139':['0'], 
+                               '140':['0'], 
+                               '141':['0'], 
+                               '142':['0'], 
+                               '143':['0'], 
+                               '144':['0']}
         self.electricDipole = ElectricDipole()
         self.magneticDipole = MagneticDipole()
         self.electricField  = ElectricField()
         self.magneticField  = MagneticField()
+        self.orthonorm      = None
+        self.step_size      = None
+        self.total_steps    = None
         self.time           = None
         self.energy         = None
         self.frequency      = None
@@ -58,6 +75,7 @@ class RealTime(object):
 
         # Call parser 
         parse_file(self)
+        decode_iops(self)
 
         # Make all arrays consistent length
         clean_data(self)
@@ -162,6 +180,7 @@ class RealTime(object):
     def test(self):
         self.check_energy()
         self.check_field()
+        self.check_iops()
         pass
 
     def check_energy(self):
@@ -169,17 +188,17 @@ class RealTime(object):
         t_maxE = self.time[np.argmax(self.energy)]
         t_minE = self.time[np.argmin(self.energy)]
         print "Energy conserved to: ", "{0:.2e}".format(dE), " au"
-        print "Max energy at time: ", t_maxE, " au"
-        print "Min energy at time: ", t_minE, " au"
+        print "Max energy at time:  ", t_maxE, " au"
+        print "Min energy at time:  ", t_minE, " au"
 
     def check_field(self,tol=1e-6):
         if self.envelope['Field']:
-            print "Checking the external field for: ", self.envelope['Envelope']
-            print "Ex field matches: ", np.allclose(self.electricField.x,
+            print "External field:      ", self.envelope['Envelope']
+            print "Ex field matches:    ", np.allclose(self.electricField.x,
                 self.expected_field('Ex'),atol=tol)
-            print "Ey field matches: ", np.allclose(self.electricField.y,
+            print "Ey field matches:    ", np.allclose(self.electricField.y,
                 self.expected_field('Ey'),atol=tol)
-            print "Ez field matches: ", np.allclose(self.electricField.z,
+            print "Ez field matches:    ", np.allclose(self.electricField.z,
                 self.expected_field('Ez'),atol=tol)
            # print "Bx field matches: ", np.allclose(self.magneticField.x,
            #     self.expected_field('Bx'),atol=tol)
@@ -189,6 +208,54 @@ class RealTime(object):
            #     self.expected_field('Bz'),atol=tol)
         else:
             print "No external field applied"
+
+    def check_iops(self):
+        """ Check internal consistency of some set iops and values printed out
+        to the logfile, as well as some derived quantities"""
+        # Check the step size
+        if self.step_size == (self.time[2] - self.time[1]):
+            if ((self.step_size == 0.05) \
+                and (int(self.iops['134'][0]) == 0)) or\
+               (self.step_size == float(self.iops['134'][0])*0.00001):
+                print "Time step             [OK]: ", self.step_size, " au"
+        else:
+            print "Inconsistent time step: "
+            print "  IOps:                  ", self.iops['134'][1]
+            print "  logfile header showing ", self.step_size
+            print "  logfile showing        ", self.time[2] - self.time[1]
+        # Check the total propagation steps
+        if ((self.total_steps == 50) \
+           and (int(self.iops['177'][0]) == 0)) or\
+          (self.total_steps == int(self.iops['177'][0])):
+               print "Total propagation     [OK]: ", self.total_steps, " steps"
+        else:
+            print "Inconsistent propagation time: "
+            print "  IOps:                  ", self.iops['177'][1]
+            print "  logfile header showing ", self.total_steps
+        # Check if external field is indeed On or OFF
+        if ((self.envelope['Field'] == False) and\
+           (int(self.iops['138'][0]) == 0)):
+            print "Field off:            [OK]"
+        elif (self.envelope and int(self.iops['138'][0]) != 0):
+            print "Field on:             [OK]"
+        else:
+            print "Inconsistency in field:"
+            print "IOps:                     ", self.iops['138'] 
+        
+        # Check Orthonormalization
+        if ((self.orthonorm == self.iops['136'][1])):
+            print "Orthonormality        [OK]:", self.orthonorm
+        else:
+            print "Inconsistency in orthonormality"
+            print "IOps:                      ", self.iops['136'][1]
+            print "logfile showing:           ", self.iops['136'][1]
+           
+       
+           
+            
+           
+ 
+ 
 
     def expected_field(self,component):
         Time  = self.time
@@ -233,23 +300,12 @@ class RealTime(object):
             sys.exit(0) 
         return field
 
-             
-
-      
-        
-
-    
  
 if __name__ == '__main__':
-    x = RealTime('test_x')
-    import matplotlib.pyplot as plt 
-    #plt.plot(x.time,x.expected_field('Ex'),label='expected',lw=2,color='gray')
-    #plt.plot(x.time,x.electricField.x,label='actual',ls='--',lw=2,color='black')
-    #plt.plot(x.time,x.energy)
-    #plt.plot(x.time,x.energy)
-    x.fourier_tx()
-    #plt.legend()
-    #x.test()
+    x = RealTime('test_y')
+    #import matplotlib.pyplot as plt 
+    #plt.plot(x.time,x.electricDipole.x -x.electricDipole.x[0],label='X')
+    x.test()
     #plt.show()
     
             

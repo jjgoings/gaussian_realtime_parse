@@ -1,3 +1,4 @@
+import re
 import numpy as np
 
 def parse_file(self):
@@ -24,6 +25,7 @@ def parse_file(self):
     LUMO= []
    
     for idx, line in enumerate(lines):
+        r = re.findall(r'5/.*/12',line)
         if line[1:26] == 'External field Parameters':
             self.envelope['Field']     = True
             self.envelope['Envelope']  = lines[idx+1].split()[2]   # string
@@ -45,6 +47,18 @@ def parse_file(self):
             self.envelope['Terms']     = lines[idx+14].split()[3:] # mult str
         elif line[1:27] == 'No external field applied.':
             self.envelope['Field']     = False
+        elif r:
+            iops = r[0].split('/')[1:-1][0].split(',')
+            for iop in iops:
+                key = iop.split('=')[0]
+                val = iop.split('=')[1]
+                self.iops[key] = [val]
+        elif line[1:33] == '               Number of steps =':
+            self.total_steps = int(lines[idx].split()[4])
+        elif line[1:33] == '                     Step size =':
+            self.step_size = float(lines[idx].split()[3])
+        elif line[1:33] == '     Orthonormalization method =':
+            self.orthonorm = lines[idx].split()[3]
         elif line[1:34] == 'Alpha orbital occupation numbers:': 
             #FIXME ONLY FOR H2+ RABI
             HOMO.append(float(lines[idx+1].split()[0])) 
@@ -168,7 +182,95 @@ def truncate(self,length):
                #print "Unknown data type: "+str(x)+str(q)
                pass
 
-
+def decode_iops(self):
+    for iop in self.iops:
+        if iop == '132':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('No Fock updates')
+            else:
+               self.iops[iop].append(str(key)+' Fock updates per nuclear step')
+        elif iop == '134':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('0.05 au step size')
+            else:
+               self.iops[iop].append(str(key*0.00001)+' au step size')
+        elif iop == '133':
+            key = int(self.iops[iop][0])
+            if (key % 10) == 0:
+               self.iops[iop].append('First call to l512')
+            elif (key % 10) == 1:
+               self.iops[iop].append('First call to l512')
+            elif (key % 10) == 2:
+               self.iops[iop].append('Not first call to l512')
+        elif iop == '177':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('Propagation for 50 steps')
+            else:
+               self.iops[iop].append('Propagation for '+str(abs(key))+' steps')
+        elif iop == '136':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('Lowdin')
+            elif key == 1:
+               self.iops[iop].append('Lowdin')
+            elif key == 2:
+               self.iops[iop].append('Cholesky')
+        elif iop == '137':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('')
+            else:
+               self.iops[iop].append('')
+        elif iop == '138':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('No external field')
+            elif (key % 10) == 1:
+               self.iops[iop].append('Electric Dipole')
+        elif iop == '139':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('')
+            else:
+               self.iops[iop].append('')
+        elif iop == '140':
+            key = int(self.iops[iop][0])
+            self.iops[iop].append('Pop. analysis (N/A)')
+        elif iop == '141':
+            key = int(self.iops[iop][0])
+            if key%10 == 0:
+               self.iops[iop].append('No additional print')
+            elif key%10 == 1:
+               self.iops[iop].append('Print orbital occu. num')
+            elif (key % 10) == 2:
+               self.iops[iop].append('Print orbital energy + orbital occu. num')
+            elif (key % 100)/10 == 1:
+               self.iops[iop].append('Print electron density difference')
+            elif (key % 100)/100 == 1:
+               self.iops[iop].append('Debug print')
+        elif iop == '142':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('Print every step')
+            else:
+               self.iops[iop].append('Print every '+str(key)+' steps')
+        elif iop == '143':
+            key = int(self.iops[iop][0])
+            if key <= 0:
+               self.iops[iop].append('Do not restart MMUT')
+            else:
+               self.iops[iop].append('Restart MMUT every '+str(key)+' steps')
+        elif iop == '144':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('Print HOMO-6 to LUMO+10')
+            elif key == -1:
+               self.iops[iop].append('Print all orbitals')
+            else:
+               self.iops[iop].append('Print HOMO-6*N to LUMO+6*N+4')
 
 
 

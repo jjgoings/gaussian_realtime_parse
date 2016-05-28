@@ -56,6 +56,8 @@ class Spectra(object):
                 ax.set_ylim([0,4])
             elif self.spectra_type == 'ecd':
                 ax.set_ylim([-400,400])
+        else:
+          ax.set_ylim(ylim)
         plt.show()
 
     def align_data(self):
@@ -97,9 +99,10 @@ if __name__ == '__main__':
     #                  y='AuH-x2c_yy',
     #                  z='AuH-x2c_zz',
     #                  s='abs',auto=True)
-    spectra = Spectra(x='test_x',y='test_y',auto=True)
+    spectra = Spectra(x='test_x',y='test_y',z='test_z',auto=True)
     spectra.x.test()
     spectra.y.test()
-    spectra.peaks(9)
-    spectra.plot(xlim=[0,30])
+    spectra.z.test()
+    #spectra.peaks(9)
+    spectra.plot(xlim=[0,30],ylim=[-0.5,4])
 
