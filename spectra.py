@@ -1,4 +1,5 @@
 import sys
+import time
 import numpy as np
 from realtime import *
 
@@ -35,8 +36,12 @@ class Spectra(object):
  
         # Do the isotropic fourier transform 
         for q in self.directions:
-            self.__dict__[q].fourier_tx(q,self.spectra_type,self.damp_const,
-                self.zero_pad,auto=auto)
+            t0 = time.time()
+            self.__dict__[q].pade_tx(q,self.spectra_type)
+            t1 = time.time()
+            print "Pade done in: ", t1-t0
+            #self.__dict__[q].fourier_tx(q,self.spectra_type,self.damp_const,
+            #    self.zero_pad,auto=auto)
 
         self.spectra = np.zeros_like(self.__dict__[self.directions[0]].fourier)
         for q in self.directions:
@@ -95,14 +100,9 @@ class Spectra(object):
 
 
 if __name__ == '__main__':
-    #spectra = Spectra(x='AuH-x2c_xx',
-    #                  y='AuH-x2c_yy',
-    #                  z='AuH-x2c_zz',
-    #                  s='abs',auto=True)
-    spectra = Spectra(x='test_x',y='test_y',z='test_z',auto=True)
-    spectra.x.test()
-    spectra.y.test()
+    spectra = Spectra(x='test_x',y='test_y',z='test_z')
     spectra.z.test()
-    #spectra.peaks(9)
+    spectra.peaks(9)
     spectra.plot(xlim=[0,30],ylim=[-0.5,4])
+    
 

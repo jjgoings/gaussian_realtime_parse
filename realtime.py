@@ -1,6 +1,8 @@
 from __future__ import division
 import numpy as np
+from scipy.linalg import solve
 import sys
+import time
 from properties import *
 from parse_file import *
 
@@ -79,6 +81,98 @@ class RealTime(object):
 
         # Make all arrays consistent length
         clean_data(self)
+
+    def pade_tx(self,dipole_direction='x',spectra='abs',damp_const=800):
+
+        if spectra.lower() == 'abs':  
+            if dipole_direction.lower() == 'x':
+                dipole = self.electricDipole.x
+                kick_strength = self.electricField.x[0]
+            elif dipole_direction.lower() == 'y':
+                dipole = self.electricDipole.y
+                kick_strength = self.electricField.y[0]
+            elif dipole_direction.lower() == 'z':
+                dipole = self.electricDipole.z
+                kick_strength = self.electricField.z[0]
+            else:
+                print "Not a valid direction for the dipole! Try: x,y,z "
+        elif spectra.lower() == 'ecd':
+            if dipole_direction.lower() == 'x':
+                dipole = self.magneticDipole.x
+                kick_strength = self.electricField.x[0]
+            elif dipole_direction.lower() == 'y':
+                dipole = self.magneticDipole.y
+                kick_strength = self.electricField.y[0]
+            elif dipole_direction.lower() == 'z':
+                dipole = self.magneticDipole.z
+                kick_strength = self.electricField.z[0]
+            else:
+                print "Not a valid direction for the dipole! Try: x,y,z "
+        else: 
+            print "Not a valid spectra choice"
+
+        if np.isclose(kick_strength,0.0):
+            print "Kick = 0, you are trying to FFT the wrong file"
+            print "Try to change dipole direction!"
+            sys.exit(0)
+
+        dipole = dipole - dipole[0]
+        damp = np.exp(-(self.time-self.time[0])/float(damp_const))
+        dipole = dipole * damp
+
+        timestep = self.time[2] - self.time[1]
+        M = len(dipole)
+        N = int(np.floor(M / 2))
+        if N > 20000:
+            N = 20000
+
+        a = np.zeros(N)
+
+        # G and d are (N-1) x (N-1)
+        # d[k] = -dipole[N+k] for k in range(1,N)
+        d = -dipole[N+1:2*N] 
+        # G[k,m] = dipole[N - m + k] for m,k in range(0,N-1)
+        G = dipole[N + np.arange(N-1)[:,None] - np.arange(N-1)]
+       
+        b = solve(G,d,check_finite=False)
+      
+        # Now make b Nx1 where b0 = 1 
+        b = np.hstack((1,b)) 
+
+        from scipy.linalg import toeplitz
+        # b[m]*dipole[k-m] for k in range(0,N), for m in range(k) 
+        a = np.dot(np.tril(toeplitz(dipole[0:N])),b)
+
+        p = np.poly1d(a)
+        q = np.poly1d(b)
+
+        self.frequency = np.arange(0,2,0.00025)
+        W = np.exp(-1j*self.frequency*timestep)
+
+        fw_re = np.real(p(W)/q(W))
+        fw_im = np.imag(p(W)/q(W))
+
+        #fw = fft(dipole)
+        #fw_re = np.real(fw)
+        #fw_im = np.imag(fw)
+       
+        #n = len(fw_re)
+        #m = n / 2
+        #timestep = self.time[2] - self.time[1]
+        #self.frequency = fftfreq(n,d=timestep)*2.0*np.pi
+
+        if np.any(np.isinf(self.frequency)) or np.any(np.isnan(self.frequency)):
+            print "Check your dT: frequency contains NaNs and/or Infs!"
+            sys.exit(0)
+
+        if spectra.lower() == 'abs':
+            self.fourier = \
+                (4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength)
+        elif spectra.lower() == 'ecd':
+            self.fourier = \
+                (17.32*fw_re)/(np.pi*kick_strength)
+
+                
 
     def fourier_tx(self,dipole_direction='x',spectra='abs',damp_const=150,
                     zero_pad=None,auto=False):
@@ -179,7 +273,6 @@ class RealTime(object):
 
     def test(self):
         self.check_energy()
-        self.check_field()
         self.check_iops()
         pass
 
@@ -238,6 +331,7 @@ class RealTime(object):
             print "Field off:            [OK]"
         elif (self.envelope and int(self.iops['138'][0]) != 0):
             print "Field on:             [OK]"
+            self.check_field()
         else:
             print "Inconsistency in field:"
             print "IOps:                     ", self.iops['138'] 
@@ -249,13 +343,6 @@ class RealTime(object):
             print "Inconsistency in orthonormality"
             print "IOps:                      ", self.iops['136'][1]
             print "logfile showing:           ", self.iops['136'][1]
-           
-       
-           
-            
-           
- 
- 
 
     def expected_field(self,component):
         Time  = self.time
@@ -302,11 +389,10 @@ class RealTime(object):
 
  
 if __name__ == '__main__':
-    x = RealTime('test_y')
-    #import matplotlib.pyplot as plt 
-    #plt.plot(x.time,x.electricDipole.x -x.electricDipole.x[0],label='X')
-    x.test()
-    #plt.show()
+    x = RealTime('test')
+    import matplotlib.pyplot as plt 
+    plt.plot(x.time,x.energy)
+    plt.show()
     
             
 
