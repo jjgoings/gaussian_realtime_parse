@@ -27,24 +27,58 @@ def parse_file(self):
     for idx, line in enumerate(lines):
         r = re.findall(r'5/.*/12',line)
         if line[1:26] == 'External field Parameters':
+#            self.envelope['Field']     = True
+#            self.envelope['Envelope']  = lines[idx+1].split()[2]   # string
+#            self.envelope['Gauge']     = lines[idx+2].split()[2]   # string 
+#            self.envelope['Ex']        = float(lines[idx+3].split()[2])  # au 
+#            self.envelope['Ey']        = float(lines[idx+4].split()[2])  # au
+#            self.envelope['Ez']        = float(lines[idx+5].split()[2])  # au
+#            self.envelope['Bx']        = float(lines[idx+6].split()[2])  # au
+#            self.envelope['By']        = float(lines[idx+7].split()[2])  # au
+#            self.envelope['Bz']        = float(lines[idx+8].split()[2])  # au
+#            self.envelope['Frequency'] = float(lines[idx+9].split()[2])  # au
+#            self.envelope['Phase']     = float(lines[idx+11].split()[2]) # au
+#            self.envelope['TOn']       = float(lines[idx+12].split()[2]) # au
+#            # Exception to fix user setting Toff to obscenely large values
+#            try:
+#                self.envelope['TOff']      = float(lines[idx+13].split()[2]) # au
+#            except ValueError:
+#                self.envelope['TOff']      = 100000000.000 # au
+#            self.envelope['Terms']     = lines[idx+14].split()[3:] # mult str
+#dbwy
             self.envelope['Field']     = True
-            self.envelope['Envelope']  = lines[idx+1].split()[2]   # string
-            self.envelope['Gauge']     = lines[idx+2].split()[2]   # string 
-            self.envelope['Ex']        = float(lines[idx+3].split()[2])  # au 
-            self.envelope['Ey']        = float(lines[idx+4].split()[2])  # au
-            self.envelope['Ez']        = float(lines[idx+5].split()[2])  # au
-            self.envelope['Bx']        = float(lines[idx+6].split()[2])  # au
-            self.envelope['By']        = float(lines[idx+7].split()[2])  # au
-            self.envelope['Bz']        = float(lines[idx+8].split()[2])  # au
-            self.envelope['Frequency'] = float(lines[idx+9].split()[2])  # au
-            self.envelope['Phase']     = float(lines[idx+11].split()[2]) # au
-            self.envelope['TOn']       = float(lines[idx+12].split()[2]) # au
-            # Exception to fix user setting Toff to obscenely large values
-            try:
-                self.envelope['TOff']      = float(lines[idx+13].split()[2]) # au
-            except ValueError:
-                self.envelope['TOff']      = 100000000.000 # au
-            self.envelope['Terms']     = lines[idx+14].split()[3:] # mult str
+            for jdx in range(1,15):
+              if 'Envelope' in lines[idx+jdx].split()[0]:
+                self.envelope['Envelope']  = lines[idx+jdx].split()[2] # string
+              elif 'Gauge' in lines[idx+jdx].split()[0]:
+                self.envelope['Gauge']     = lines[idx+jdx].split()[2] # string 
+              elif 'Ex' in lines[idx+jdx].split()[0]:
+                self.envelope['Ex']  = float(lines[idx+jdx].split()[2]) # au
+              elif 'Ey' in lines[idx+jdx].split()[0]:
+                self.envelope['Ey']  = float(lines[idx+jdx].split()[2]) # au
+              elif 'Ez' in lines[idx+jdx].split()[0]:
+                self.envelope['Ez']  = float(lines[idx+jdx].split()[2]) # au
+              elif 'Bx' in lines[idx+jdx].split()[0]:
+                self.envelope['Bx']  = float(lines[idx+jdx].split()[2]) # au
+              elif 'By' in lines[idx+jdx].split()[0]:
+                self.envelope['By']  = float(lines[idx+jdx].split()[2]) # au
+              elif 'Bz' in lines[idx+jdx].split()[0]:
+                self.envelope['Bz']  = float(lines[idx+jdx].split()[2]) # au
+              elif 'Frequency' in lines[idx+jdx].split()[0]:
+                self.envelope['Frequency']  = float(lines[idx+jdx].split()[2]) # au
+              elif 'Phase' in lines[idx+jdx].split()[0]:
+                self.envelope['Phase']  = float(lines[idx+jdx].split()[2]) # au
+              elif 't(on)' in lines[idx+jdx].split()[0]:
+                self.envelope['TOn']  = float(lines[idx+jdx].split()[2]) # au
+              elif 't(off)' in lines[idx+jdx].split()[0]:
+              # Exception to fix user setting Toff to obscenely large values
+                try:
+                  self.envelope['TOff']  = float(lines[idx+jdx].split()[2]) # au
+                except ValueError:
+                    self.envelope['TOff']      = 100000000.000 # au
+              elif 'Terms' in lines[idx+jdx].split()[0]:
+                self.envelope['Terms']  = lines[idx+jdx].split()[3:] # multistring
+                break
         elif line[1:27] == 'No external field applied.':
             self.envelope['Field']     = False
         elif r:
