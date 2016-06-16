@@ -49,7 +49,8 @@ class Spectra(object):
             self.spectra += self.__dict__[q].fourier
 
 
-    def plot(self,xlim=[0,15],ylim=None):
+    def plot(self,xlim=[0,15],ylim=None,save=None,show=True):
+        # save is a filename 
         toEV = 27.2114 
         import matplotlib.pyplot as plt
         ax = plt.subplot(111)
@@ -63,7 +64,13 @@ class Spectra(object):
                 ax.set_ylim([-400,400])
         else:
           ax.set_ylim(ylim)
-        plt.show()
+        if save:
+            if isinstance(save,str):
+                plt.savefig(save)
+            else:
+                raise ValueError, "'save' needs to be your filename!"
+        if show:
+            plt.show()
 
     def align_data(self):
         lengths = []
@@ -100,9 +107,21 @@ class Spectra(object):
 
 
 if __name__ == '__main__':
-    spectra = Spectra(x='test_x',y='test_y',z='test_z')
-    spectra.z.test()
-    spectra.peaks(9)
-    spectra.plot(xlim=[0,30],ylim=[-0.5,4])
+    spectra = Spectra(x='TlH-x2c-DFT_xx',
+                      y='TlH-x2c-DFT_yy',
+                      z='TlH-x2c-DFT_zz',
+                      auto=True)
+    #spectra = Spectra(x='AuH-x2c-DFT_xx',
+    #                  y='AuH-x2c-DFT_yy',
+    #                  z='AuH-x2c-DFT_zz',
+    #                  auto=True)
+    #spectra = Spectra(x='AuH-x2c_xx',
+    #                  y='AuH-x2c_yy',
+    #                  z='AuH-x2c_zz',
+    #                  auto=True)
+    #spectra = Spectra(x='cd')
+    #spectra.z.test()
+    #spectra.peaks(9)
+    spectra.plot(xlim=[0,20],ylim=[-0.5,4],save='out',show=False)
     
 

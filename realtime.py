@@ -82,7 +82,7 @@ class RealTime(object):
         # Make all arrays consistent length
         clean_data(self)
 
-    def pade_tx(self,dipole_direction='x',spectra='abs',damp_const=800):
+    def pade_tx(self,dipole_direction='x',spectra='abs',damp_const=5500):
 
         if spectra.lower() == 'abs':  
             if dipole_direction.lower() == 'x':
@@ -123,16 +123,16 @@ class RealTime(object):
         timestep = self.time[2] - self.time[1]
         M = len(dipole)
         N = int(np.floor(M / 2))
-        if N > 20000:
-            N = 20000
+        if N > 10000:
+            N = 10000
 
         a = np.zeros(N)
 
         # G and d are (N-1) x (N-1)
         # d[k] = -dipole[N+k] for k in range(1,N)
         d = -dipole[N+1:2*N] 
-        # G[k,m] = dipole[N - m + k] for m,k in range(0,N-1)
-        G = dipole[N + np.arange(N-1)[:,None] - np.arange(N-1)]
+        # G[k,m] = dipole[N - m + k] for m,k in range(1,N)
+        G = dipole[N + np.arange(1,N)[:,None] - np.arange(1,N)]
        
         b = solve(G,d,check_finite=False)
       
@@ -146,7 +146,7 @@ class RealTime(object):
         p = np.poly1d(a)
         q = np.poly1d(b)
 
-        self.frequency = np.arange(0,2,0.00025)
+        self.frequency = np.arange(0,2,0.0001)
         W = np.exp(-1j*self.frequency*timestep)
 
         fw_re = np.real(p(W)/q(W))
@@ -389,7 +389,7 @@ class RealTime(object):
 
  
 if __name__ == '__main__':
-    x = RealTime('test')
+    x = RealTime('cd')
     import matplotlib.pyplot as plt 
     plt.plot(x.time,x.energy)
     plt.show()
