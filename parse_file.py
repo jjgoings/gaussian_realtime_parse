@@ -48,37 +48,40 @@ def parse_file(self):
 #dbwy
             self.envelope['Field']     = True
             for jdx in range(1,15):
-              if 'Envelope' in lines[idx+jdx].split()[0]:
-                self.envelope['Envelope']  = lines[idx+jdx].split()[2] # string
-              elif 'Gauge' in lines[idx+jdx].split()[0]:
-                self.envelope['Gauge']     = lines[idx+jdx].split()[2] # string 
-              elif 'Ex' in lines[idx+jdx].split()[0]:
-                self.envelope['Ex']  = float(lines[idx+jdx].split()[2]) # au
-              elif 'Ey' in lines[idx+jdx].split()[0]:
-                self.envelope['Ey']  = float(lines[idx+jdx].split()[2]) # au
-              elif 'Ez' in lines[idx+jdx].split()[0]:
-                self.envelope['Ez']  = float(lines[idx+jdx].split()[2]) # au
-              elif 'Bx' in lines[idx+jdx].split()[0]:
-                self.envelope['Bx']  = float(lines[idx+jdx].split()[2]) # au
-              elif 'By' in lines[idx+jdx].split()[0]:
-                self.envelope['By']  = float(lines[idx+jdx].split()[2]) # au
-              elif 'Bz' in lines[idx+jdx].split()[0]:
-                self.envelope['Bz']  = float(lines[idx+jdx].split()[2]) # au
-              elif 'Frequency' in lines[idx+jdx].split()[0]:
-                self.envelope['Frequency']  = float(lines[idx+jdx].split()[2]) # au
-              elif 'Phase' in lines[idx+jdx].split()[0]:
-                self.envelope['Phase']  = float(lines[idx+jdx].split()[2]) # au
-              elif 't(on)' in lines[idx+jdx].split()[0]:
-                self.envelope['TOn']  = float(lines[idx+jdx].split()[2]) # au
-              elif 't(off)' in lines[idx+jdx].split()[0]:
-              # Exception to fix user setting Toff to obscenely large values
-                try:
-                  self.envelope['TOff']  = float(lines[idx+jdx].split()[2]) # au
-                except ValueError:
-                    self.envelope['TOff']      = 100000000.000 # au
-              elif 'Terms' in lines[idx+jdx].split()[0]:
-                self.envelope['Terms']  = lines[idx+jdx].split()[3:] # multistring
-                break
+                # control for newlines (length zero)
+                if not len(lines[idx+jdx]):
+                   continue 
+                elif 'Envelope' in lines[idx+jdx].split()[0]:
+                      self.envelope['Envelope']  = lines[idx+jdx].split()[2] # string
+                elif 'Gauge' in lines[idx+jdx].split()[0]:
+                      self.envelope['Gauge']     = lines[idx+jdx].split()[2] # string 
+                elif 'Ex' in lines[idx+jdx].split()[0]:
+                      self.envelope['Ex']  = float(lines[idx+jdx].split()[2]) # au
+                elif 'Ey' in lines[idx+jdx].split()[0]:
+                      self.envelope['Ey']  = float(lines[idx+jdx].split()[2]) # au
+                elif 'Ez' in lines[idx+jdx].split()[0]:
+                      self.envelope['Ez']  = float(lines[idx+jdx].split()[2]) # au
+                elif 'Bx' in lines[idx+jdx].split()[0]:
+                      self.envelope['Bx']  = float(lines[idx+jdx].split()[2]) # au
+                elif 'By' in lines[idx+jdx].split()[0]:
+                      self.envelope['By']  = float(lines[idx+jdx].split()[2]) # au
+                elif 'Bz' in lines[idx+jdx].split()[0]:
+                      self.envelope['Bz']  = float(lines[idx+jdx].split()[2]) # au
+                elif 'Frequency' in lines[idx+jdx].split()[0]:
+                      self.envelope['Frequency']  = float(lines[idx+jdx].split()[2]) # au
+                elif 'Phase' in lines[idx+jdx].split()[0]:
+                      self.envelope['Phase']  = float(lines[idx+jdx].split()[2]) # au
+                elif 't(on)' in lines[idx+jdx].split()[0]:
+                      self.envelope['TOn']  = float(lines[idx+jdx].split()[2]) # au
+                elif 't(off)' in lines[idx+jdx].split()[0]:
+                # Exception to fix user setting Toff to obscenely large values
+                  try:
+                        self.envelope['TOff']  = float(lines[idx+jdx].split()[2]) # au
+                  except ValueError:
+                          self.envelope['TOff']      = 100000000.000 # au
+                elif 'Terms' in lines[idx+jdx].split()[0]:
+                      self.envelope['Terms']  = lines[idx+jdx].split()[3:] # multistring
+                      break
         elif line[1:27] == 'No external field applied.':
             self.envelope['Field']     = False
         elif r:
