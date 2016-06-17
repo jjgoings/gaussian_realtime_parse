@@ -82,7 +82,9 @@ class RealTime(object):
         # Make all arrays consistent length
         clean_data(self)
 
-    def pade_tx(self,dipole_direction='x',spectra='abs',damp_const=5500):
+    def pade_tx(self,dipole_direction='x',spectra='abs',damp_const=5500,
+        num_pts=10000):
+        # num_pts: number of points to sample for pade transformation
 
         if spectra.lower() == 'abs':  
             if dipole_direction.lower() == 'x':
@@ -123,8 +125,8 @@ class RealTime(object):
         timestep = self.time[2] - self.time[1]
         M = len(dipole)
         N = int(np.floor(M / 2))
-        if N > 10000:
-            N = 10000
+        if N > num_pts:
+            N = num_pts
 
         a = np.zeros(N)
 
@@ -389,9 +391,9 @@ class RealTime(object):
 
  
 if __name__ == '__main__':
-    x = RealTime('cd')
+    x = RealTime('AuH-x2c-DFT_xx')
     import matplotlib.pyplot as plt 
-    plt.plot(x.time,x.energy)
+    plt.plot(x.time,x.electricDipole.x)
     plt.show()
     
             
