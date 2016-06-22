@@ -26,6 +26,7 @@ class RealTime(object):
         propertyarrays:  List containing names of properties stored as arrays.
         truncate:        Method to truncate propertyarrays to a given length
         mmut_restart:    Integer containing how often MMUT restarts
+        au2fs:           Scalar constant to convert au to femtoseconds 
     """
 
     def __init__(self, name):
@@ -114,16 +115,18 @@ class RealTime(object):
         else: 
             print "Not a valid spectra choice"
 
-        #if np.isclose(kick_strength,0.0):
-        #    print "Kick = 0, you are trying to FFT the wrong file"
-        #    print "Try to change dipole direction!"
-        #    sys.exit(0)
+        if np.isclose(kick_strength,0.0):
+            print "Kick = 0, you are trying to FFT the wrong file"
+            print "Try to change dipole direction!"
+            sys.exit(0)
  
 
-        skip = 1
+        # skip is integer to skip every n-th value
+        # skip = 1 would not skip any values, but skip = 10 would only
+        # consider every tenth value
+        skip = 1 
         dipole = dipole - dipole[0]
         dipole = dipole[::skip]
-        time = self.time[::skip]
         damp = np.exp(-(self.time-self.time[0])/float(damp_const))
         damp = damp[::skip]
         dipole = dipole * damp
@@ -131,26 +134,33 @@ class RealTime(object):
         timestep = skip*(self.time[2] - self.time[1])
         M = len(dipole)
         N = int(np.floor(M / 2))
+
         if N > num_pts:
             N = num_pts
-        print "N = ", N
-        print "Max Time (au) = ", time[2*N]
-
-        a = np.zeros(N)
 
         # G and d are (N-1) x (N-1)
         # d[k] = -dipole[N+k] for k in range(1,N)
         d = -dipole[N+1:2*N] 
 
-        # OLD 
+        # Old code, which works with regular Ax=b linear solver. 
         # G[k,m] = dipole[N - m + k] for m,k in range(1,N)
         #G = dipole[N + np.arange(1,N)[:,None] - np.arange(1,N)]
         #b = solve(G,d,check_finite=False)
-        from scipy.linalg import toeplitz, solve_toeplitz
+
+        # Toeplitz linear solver using Levinson recursion
+        # Should be O(n^2), and seems to work well, but if you get strange
+        # results you may want to switch to regular linear solver which is much
+        # more stable.
+        try:
+            from scipy.linalg import toeplitz, solve_toeplitz
+        except ImportError:
+            print "You'll need SciPy version >= 0.17.0"
+            
         # Instead, form G = (c,r) as toeplitz
-        c = dipole[N:2*N-1]
-        r = np.hstack((dipole[1],dipole[N-1:1:-1]))
-        b = solve_toeplitz((c,r),d,check_finite=False)
+        #c = dipole[N:2*N-1]
+        #r = np.hstack((dipole[1],dipole[N-1:1:-1]))
+        b = solve_toeplitz((dipole[N:2*N-1],\
+            np.hstack((dipole[1],dipole[N-1:1:-1]))),d,check_finite=False)
       
         # Now make b Nx1 where b0 = 1 
         b = np.hstack((1,b)) 
@@ -161,20 +171,13 @@ class RealTime(object):
         p = np.poly1d(a)
         q = np.poly1d(b)
 
+        # If you want energies greater than 2*27.2114 eV, you'll need to change
+        # the default frequency range to something greater.
         self.frequency = np.arange(0,2,0.0001)
         W = np.exp(-1j*self.frequency*timestep)
 
         fw_re = np.real(p(W)/q(W))
         fw_im = np.imag(p(W)/q(W))
-
-        #fw = fft(dipole)
-        #fw_re = np.real(fw)
-        #fw_im = np.imag(fw)
-       
-        #n = len(fw_re)
-        #m = n / 2
-        #timestep = self.time[2] - self.time[1]
-        #self.frequency = fftfreq(n,d=timestep)*2.0*np.pi
 
         if np.any(np.isinf(self.frequency)) or np.any(np.isnan(self.frequency)):
             print "Check your dT: frequency contains NaNs and/or Infs!"
@@ -186,8 +189,6 @@ class RealTime(object):
         elif spectra.lower() == 'ecd':
             self.fourier = \
                 (17.32*fw_re)/(np.pi*kick_strength)
-
-                
 
     def fourier_tx(self,dipole_direction='x',spectra='abs',damp_const=150,
                     zero_pad=None,auto=False):
