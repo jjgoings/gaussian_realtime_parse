@@ -57,6 +57,7 @@ class RealTime(object):
         self.energy         = None
         self.frequency      = None
         self.fourier        = None
+        self.au2fs          = 0.0241888425
         # TODO May want to look at a better way of defining which attributes are
         # arrays instead of just hard-coding them in.
         self.propertyarrays = ['electricDipole',
@@ -113,35 +114,47 @@ class RealTime(object):
         else: 
             print "Not a valid spectra choice"
 
-        if np.isclose(kick_strength,0.0):
-            print "Kick = 0, you are trying to FFT the wrong file"
-            print "Try to change dipole direction!"
-            sys.exit(0)
+        #if np.isclose(kick_strength,0.0):
+        #    print "Kick = 0, you are trying to FFT the wrong file"
+        #    print "Try to change dipole direction!"
+        #    sys.exit(0)
+ 
 
+        skip = 1
         dipole = dipole - dipole[0]
+        dipole = dipole[::skip]
+        time = self.time[::skip]
         damp = np.exp(-(self.time-self.time[0])/float(damp_const))
+        damp = damp[::skip]
         dipole = dipole * damp
 
-        timestep = self.time[2] - self.time[1]
+        timestep = skip*(self.time[2] - self.time[1])
         M = len(dipole)
         N = int(np.floor(M / 2))
         if N > num_pts:
             N = num_pts
+        print "N = ", N
+        print "Max Time (au) = ", time[2*N]
 
         a = np.zeros(N)
 
         # G and d are (N-1) x (N-1)
         # d[k] = -dipole[N+k] for k in range(1,N)
         d = -dipole[N+1:2*N] 
+
+        # OLD 
         # G[k,m] = dipole[N - m + k] for m,k in range(1,N)
-        G = dipole[N + np.arange(1,N)[:,None] - np.arange(1,N)]
-       
-        b = solve(G,d,check_finite=False)
+        #G = dipole[N + np.arange(1,N)[:,None] - np.arange(1,N)]
+        #b = solve(G,d,check_finite=False)
+        from scipy.linalg import toeplitz, solve_toeplitz
+        # Instead, form G = (c,r) as toeplitz
+        c = dipole[N:2*N-1]
+        r = np.hstack((dipole[1],dipole[N-1:1:-1]))
+        b = solve_toeplitz((c,r),d,check_finite=False)
       
         # Now make b Nx1 where b0 = 1 
         b = np.hstack((1,b)) 
 
-        from scipy.linalg import toeplitz
         # b[m]*dipole[k-m] for k in range(0,N), for m in range(k) 
         a = np.dot(np.tril(toeplitz(dipole[0:N])),b)
 
@@ -391,10 +404,11 @@ class RealTime(object):
 
  
 if __name__ == '__main__':
-    x = RealTime('AuH-x2c-DFT_xx')
+    a = RealTime('test')
     import matplotlib.pyplot as plt 
-    plt.plot(x.time,x.electricDipole.x)
-    plt.show()
+    plt.plot(a.time,a.electricDipole.z)
+    plt.savefig('dipole.pdf')
+    #plt.show()
     
             
 
