@@ -269,7 +269,7 @@ class RealTime(object):
         fw_im = np.imag(fw)
        
         n = len(fw_re)
-        m = n / 2
+        m = int(n / 2)
         timestep = self.time[2] - self.time[1]
         self.frequency = fftfreq(n,d=timestep)*2.0*np.pi
         if np.any(np.isinf(self.frequency)) or np.any(np.isnan(self.frequency)):

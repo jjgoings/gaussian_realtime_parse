@@ -52,13 +52,13 @@ class Spectra(object):
  
         # Do the isotropic transform to frequency domain 
         for q in self.directions:
-            if transformation == 'pade':
+            if self.transformation == 'pade':
                 t0 = time.time()
                 self.__dict__[q].pade_tx(q,self.spectra_type,self.damp_const,
                     self.num_pts)
                 t1 = time.time()
                 print "Pade done in: ", t1-t0
-            elif transformation == 'fourier':
+            elif self.transformation == 'fourier':
                 self.__dict__[q].fourier_tx(q,self.spectra_type,\
                     self.damp_const,self.zero_pad,auto=auto)
 
