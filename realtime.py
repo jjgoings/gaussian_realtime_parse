@@ -56,7 +56,7 @@ class RealTime(object):
         self.total_steps    = None
         self.time           = None
         self.energy         = None
-        self.frequency      = None
+        self.frequency      = None 
         self.fourier        = None
         self.au2fs          = 0.0241888425
         # TODO May want to look at a better way of defining which attributes are
@@ -88,7 +88,7 @@ class RealTime(object):
         num_pts=10000):
         # num_pts: number of points to sample for pade transformation
 
-        if spectra.lower() == 'abs':  
+        if (spectra.lower() == 'abs') or (spectra.lower() == 'power'):  
             if dipole_direction.lower() == 'x':
                 dipole = self.electricDipole.x
                 kick_strength = self.electricField.x[0]
@@ -116,9 +116,18 @@ class RealTime(object):
             print "Not a valid spectra choice"
 
         if np.isclose(kick_strength,0.0):
-            print "Kick = 0, you are trying to FFT the wrong file"
-            print "Try to change dipole direction!"
-            sys.exit(0)
+            if dipole_direction.lower() == 'x':
+                kick_strength = max(self.electricField.x)
+            elif dipole_direction.lower() == 'y':
+                kick_strength = max(self.electricField.y)
+            elif dipole_direction.lower() == 'z':
+                kick_strength = max(self.electricField.z)
+            if np.isclose(kick_strength,0.0):
+                print "Kick strength = 0. Make sure you FFT'd the correct direction"
+                sys.exit(0)
+            print "It looks like you are not perturbing the field at time = 0"
+            print "so we are taking the maximum of the electric field instead"
+            print "This may not be the functionality you want."
  
 
         # skip is integer to skip every n-th value
@@ -135,8 +144,10 @@ class RealTime(object):
         M = len(dipole)
         N = int(np.floor(M / 2))
 
+        print "N = ", N
         if N > num_pts:
             N = num_pts
+        print "Trimmed points to: ", N
 
         # G and d are (N-1) x (N-1)
         # d[k] = -dipole[N+k] for k in range(1,N)
@@ -173,7 +184,7 @@ class RealTime(object):
 
         # If you want energies greater than 2*27.2114 eV, you'll need to change
         # the default frequency range to something greater.
-        self.frequency = np.arange(0,2,0.0001)
+        self.frequency = np.arange(0,2,0.000025)
         W = np.exp(-1j*self.frequency*timestep)
 
         fw_re = np.real(p(W)/q(W))
@@ -185,10 +196,13 @@ class RealTime(object):
 
         if spectra.lower() == 'abs':
             self.fourier = \
-                (4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength)
+                np.abs((4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength))
         elif spectra.lower() == 'ecd':
             self.fourier = \
                 (17.32*fw_re)/(np.pi*kick_strength)
+        elif spectra.lower() == 'power':
+            self.fourier = \
+                (self.frequency*(fw_re**2 + fw_im**2))/(np.pi*kick_strength)
 
     def fourier_tx(self,dipole_direction='x',spectra='abs',damp_const=150,
                     zero_pad=None,auto=False):
@@ -225,9 +239,17 @@ class RealTime(object):
             print "Not a valid spectra choice"
 
         if np.isclose(kick_strength,0.0):
-            print "Kick = 0, you are trying to FFT the wrong file"
-            print "Try to change dipole direction!"
-            sys.exit(0)
+            if dipole_direction.lower() == 'x':
+                kick_strength = max(self.electricField.x)
+            elif dipole_direction.lower() == 'y':
+                kick_strength = max(self.electricField.y)
+            elif dipole_direction.lower() == 'z':
+                kick_strength = max(self.electricField.z)
+            if np.isclose(kick_strength,0.0):
+                print "Kick strength = 0. Make sure you FFT'd the correct direction"
+                sys.exit(0)
+            print "It looks like you are not perturbing the field at time = 0"
+            print "so we are taking the maximum of the electric field instead"
 
         if auto:
             dt = self.time[2] - self.time[1]
@@ -333,13 +355,13 @@ class RealTime(object):
             print "  logfile header showing ", self.step_size
             print "  logfile showing        ", self.time[2] - self.time[1]
         # Check the total propagation steps
-        if ((self.total_steps == 50) \
-           and (int(self.iops['177'][0]) == 0)) or\
-          (self.total_steps == int(self.iops['177'][0])):
-               print "Total propagation     [OK]: ", self.total_steps, " steps"
+        if ((self.total_steps == 15) \
+           and (int(self.iops['132'][0]) == 0)) or\
+            (self.total_steps == abs(int(self.iops['132'][0]))):
+                print "Number MMUT steps     [OK]: ", self.total_steps, " steps"
         else:
             print "Inconsistent propagation time: "
-            print "  IOps:                  ", self.iops['177'][1]
+            print "  IOps:                  ", self.iops['132'][1]
             print "  logfile header showing ", self.total_steps
         # Check if external field is indeed On or OFF
         if ((self.envelope['Field'] == False) and\
@@ -364,8 +386,14 @@ class RealTime(object):
         Time  = self.time
         TOn   = self.envelope['TOn']
         TOff  = self.envelope['TOff']
-        Omega = self.envelope['Frequency']
-        Phase = self.envelope['Phase']
+        try:
+            Omega = self.envelope['Frequency']
+        except KeyError:
+            Omega = 0.0 
+        try:
+            Phase = self.envelope['Phase']
+        except KeyError:
+            Phase = 0.0
         OmegT = Omega*(Time - TOn) + Phase
         field = np.zeros_like(self.time)
         if self.envelope['Envelope'] == 'Constant':

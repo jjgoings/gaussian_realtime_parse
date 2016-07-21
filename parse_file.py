@@ -27,30 +27,12 @@ def parse_file(self):
     for idx, line in enumerate(lines):
         r = re.findall(r'5/.*/12',line)
         if line[1:26] == 'External field Parameters':
-#            self.envelope['Field']     = True
-#            self.envelope['Envelope']  = lines[idx+1].split()[2]   # string
-#            self.envelope['Gauge']     = lines[idx+2].split()[2]   # string 
-#            self.envelope['Ex']        = float(lines[idx+3].split()[2])  # au 
-#            self.envelope['Ey']        = float(lines[idx+4].split()[2])  # au
-#            self.envelope['Ez']        = float(lines[idx+5].split()[2])  # au
-#            self.envelope['Bx']        = float(lines[idx+6].split()[2])  # au
-#            self.envelope['By']        = float(lines[idx+7].split()[2])  # au
-#            self.envelope['Bz']        = float(lines[idx+8].split()[2])  # au
-#            self.envelope['Frequency'] = float(lines[idx+9].split()[2])  # au
-#            self.envelope['Phase']     = float(lines[idx+11].split()[2]) # au
-#            self.envelope['TOn']       = float(lines[idx+12].split()[2]) # au
-#            # Exception to fix user setting Toff to obscenely large values
-#            try:
-#                self.envelope['TOff']      = float(lines[idx+13].split()[2]) # au
-#            except ValueError:
-#                self.envelope['TOff']      = 100000000.000 # au
-#            self.envelope['Terms']     = lines[idx+14].split()[3:] # mult str
-#dbwy
             self.envelope['Field']     = True
             for jdx in range(1,15):
                 # control for newlines (length zero)
+                #print lines[idx+jdx].split()
                 if not len(lines[idx+jdx]):
-                   continue 
+                    continue
                 elif 'Envelope' in lines[idx+jdx].split()[0]:
                       self.envelope['Envelope']  = lines[idx+jdx].split()[2] # string
                 elif 'Gauge' in lines[idx+jdx].split()[0]:
@@ -75,13 +57,13 @@ def parse_file(self):
                       self.envelope['TOn']  = float(lines[idx+jdx].split()[2]) # au
                 elif 't(off)' in lines[idx+jdx].split()[0]:
                 # Exception to fix user setting Toff to obscenely large values
-                  try:
+                    try:
                         self.envelope['TOff']  = float(lines[idx+jdx].split()[2]) # au
-                  except ValueError:
-                          self.envelope['TOff']      = 100000000.000 # au
+                    except ValueError:
+                        self.envelope['TOff']      = 100000000.000 # au
                 elif 'Terms' in lines[idx+jdx].split()[0]:
                       self.envelope['Terms']  = lines[idx+jdx].split()[3:] # multistring
-                      break
+                      #break
         elif line[1:27] == 'No external field applied.':
             self.envelope['Field']     = False
         elif r:
@@ -96,10 +78,13 @@ def parse_file(self):
             self.step_size = float(lines[idx].split()[3])
         elif line[1:33] == '     Orthonormalization method =':
             self.orthonorm = lines[idx].split()[3]
-        elif line[1:34] == 'Alpha orbital occupation numbers:': 
+        elif line[1:27] == 'Alpha occupation numbers:': 
             #FIXME ONLY FOR H2+ RABI
-            HOMO.append(float(lines[idx+1].split()[0])) 
-            LUMO.append(float(lines[idx+1].split()[1])) 
+            HOMO.append(float(lines[idx+2].split()[1])) 
+            try:
+                LUMO.append(float(lines[idx+2].split()[2])) 
+            except IndexError:
+                LUMO.append(0.0) 
         elif line[1:7] == 'Time =':
             time = line.split()
             t.append(float(time[2]))
@@ -169,7 +154,7 @@ def clean_data(self):
         else:
             return 1e100
     # if doMMUT == True, we will delete duplicate data from MMUT restart
-    doMMUT = True 
+    doMMUT = False 
     lengths = []
     for x in self.propertyarrays:
        try:
@@ -221,13 +206,14 @@ def truncate(self,length):
 
 def decode_iops(self):
     for iop in self.iops:
-        if iop == '132':
-            key = int(self.iops[iop][0])
-            if key == 0:
-               self.iops[iop].append('No Fock updates')
-            else:
-               self.iops[iop].append(str(key)+' Fock updates per nuclear step')
-        elif iop == '134':
+        # OLD
+        #if iop == '132':
+        #    key = int(self.iops[iop][0])
+        #    if key == 0:
+        #       self.iops[iop].append('No Fock updates')
+        #    else:
+        #       self.iops[iop].append(str(key)+' Fock updates per nuclear step')
+        if iop == '134':
             key = int(self.iops[iop][0])
             if key == 0:
                self.iops[iop].append('0.05 au step size')
@@ -241,10 +227,10 @@ def decode_iops(self):
                self.iops[iop].append('First call to l512')
             elif (key % 10) == 2:
                self.iops[iop].append('Not first call to l512')
-        elif iop == '177':
+        elif iop == '132':
             key = int(self.iops[iop][0])
             if key == 0:
-               self.iops[iop].append('Propagation for 50 steps')
+               self.iops[iop].append('Propagation for 15 steps')
             else:
                self.iops[iop].append('Propagation for '+str(abs(key))+' steps')
         elif iop == '136':

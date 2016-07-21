@@ -20,7 +20,7 @@ class Spectra(object):
         tranformation:  string. Either 'fourier' or 'pade' for transformation.
     """
     def __init__(self,x=None,y=None,z=None,s='abs',d=150,zp=None,auto=False,
-        num_pts=10000,trans='fourier'):
+        num_pts=10000,trans='pade'):
         self.spectra = None
         self.frequency = None
 
@@ -68,9 +68,18 @@ class Spectra(object):
             self.spectra += self.__dict__[q].fourier
 
 
-    def plot(self,xlim=[0,15],ylim=None,save=None,show=True,
-        xlabel='Energy / eV',ylabel='S($\omega$) / arb. units',legend=None,
-        grid=True,no_xticks=False,no_yticks=False,color='blue'):
+    def plot(self,
+             xlim      = [0,15],
+             ylim      = None,
+             save      = None,
+             show      = True,
+             xlabel    = 'Energy / eV',
+             ylabel    = 'S($\omega$) / arb. units',
+             legend    = None,
+             grid      = True,
+             no_xticks = False,
+             no_yticks = False,
+             **kwargs):
         """ Plots the spectra you have obtained
             Variables:
                 xlim:      list that defines range of x-axis, e.g. [xmin,xmax]
@@ -85,9 +94,7 @@ class Spectra(object):
                 grid:      boolean. True means grid=on.
                 no_xticks: boolean. True means turn xticks off
                 no_yticks: boolean. True means turn yticks off
-                color:     string. color of your spectral line
         """
-
         toEV = 27.2114 
         try:
             import matplotlib.pyplot as plt
@@ -95,7 +102,7 @@ class Spectra(object):
             print "You need matplotlib to plot spectra"
 
         ax = plt.subplot(111)
-        ax.plot(self.frequency*toEV,self.spectra,label=legend,color=color)
+        ax.plot(self.frequency*toEV,self.spectra,label=legend,**kwargs)
         if legend:
             if isinstance(legend,str):
                 plt.legend()
@@ -174,9 +181,9 @@ class Spectra(object):
 
 
 if __name__ == '__main__':
-    cadmium = Spectra(x='cd')
+    cadmium = Spectra(x='cd',d=1000)
     cadmium.peaks(9)
-    cadmium.plot(xlim=[0,20],ylim=[-0.1,20],save='cd.pdf',show=False,
+    cadmium.plot(xlim=[0,20],ylim=[-0.1,10],save='cd.pdf',show=True,
         no_yticks=True,color='green',legend='Cd')
     
 
