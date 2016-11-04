@@ -24,7 +24,6 @@ def parse_file_cq(self):
   if self.total_steps:
     self.step_size = self.time[1] - self.time[0]
 
-  print self.total_steps
   # Parse Dipole (also has energy)
   DipoleData = np.genfromtxt(self.dipoleFile,delimiter = ',')
   DipoleData = np.delete(DipoleData,0,0)
