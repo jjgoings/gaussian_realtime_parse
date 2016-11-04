@@ -29,24 +29,37 @@ class RealTime(object):
         au2fs:           Scalar constant to convert au to femtoseconds 
     """
 
-    def __init__(self, name):
+    def __init__(self, name, prog="GAUSSIAN"):
         """Return a RealTime object whose logfile is *logfile*.""" 
         # Initialize data
         self.name           = name
-        self.logfile        = name+'.log'
+        self.prog           = prog
+
+        if prog == "GAUSSIAN":
+          self.logfile        = name+'.log'
+          self.iops           = {'132':['0'],
+                                 '134':['0'], 
+                                 '177':['0'], 
+                                 '136':['0'], 
+                                 '137':['0'], 
+                                 '138':['0'], 
+                                 '139':['0'], 
+                                 '140':['0'], 
+                                 '141':['0'], 
+                                 '142':['0'], 
+                                 '143':['0'], 
+                                 '144':['0']}
+        elif prog == "CQ":
+          self.fieldFile    = name + "_RealTime_AppliedField.csv"
+          self.dipoleFile   = name + "_RealTime_Dipole.csv"
+          self.mullikenFile = name + "_RealTime_Mulliken.csv"
+          self.occAFile     = name + "_RealTime_OrbOcc_Alpha.csv"
+          self.occBFile     = name + "_RealTime_OrbOcc_Beta.csv"
+
+        else:
+          pass # Should throw an error here
+
         self.envelope       = {}
-        self.iops           = {'132':['0'],
-                               '134':['0'], 
-                               '177':['0'], 
-                               '136':['0'], 
-                               '137':['0'], 
-                               '138':['0'], 
-                               '139':['0'], 
-                               '140':['0'], 
-                               '141':['0'], 
-                               '142':['0'], 
-                               '143':['0'], 
-                               '144':['0']}
         self.electricDipole = ElectricDipole()
         self.magneticDipole = MagneticDipole()
         self.electricField  = ElectricField()
@@ -79,10 +92,12 @@ class RealTime(object):
 
         # Call parser 
         parse_file(self)
-        decode_iops(self)
 
-        # Make all arrays consistent length
-        clean_data(self)
+        if prog == "GAUSSIAN":
+          decode_iops(self)
+
+          # Make all arrays consistent length
+          clean_data(self)
 
     def pade_tx(self,dipole_direction='x',spectra='abs',damp_const=5500,
         num_pts=10000):
