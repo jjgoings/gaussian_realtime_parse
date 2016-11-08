@@ -20,9 +20,10 @@ class Spectra(object):
         tranformation:  string. Either 'fourier' or 'pade' for transformation.
     """
     def __init__(self,x=None,y=None,z=None,s='abs',d=150,zp=None,auto=False,
-        num_pts=10000,trans='pade'):
+        num_pts=10000,trans='pade',prog="GAUSSIAN"):
         self.spectra = None
         self.frequency = None
+        self.prog = prog
 
         self.num_pts = num_pts
 
@@ -38,13 +39,13 @@ class Spectra(object):
         # Load all the RealTime objects
         self.directions = []
         if x:
-            self.x = RealTime(x)
+            self.x = RealTime(x,prog = self.prog)
             self.directions.append('x')
         if y:
-            self.y = RealTime(y)
+            self.y = RealTime(y,prog = self.prog)
             self.directions.append('y')
         if z:
-            self.z = RealTime(z)
+            self.z = RealTime(z,prog = self.prog)
             self.directions.append('z')
 
         # Enforce consistent data lengths

@@ -2,6 +2,40 @@ import re
 import numpy as np
 
 def parse_file(self):
+  if self.prog == "GAUSSIAN":
+    parse_file_gaussian(self)
+  elif self.prog == "CQ":
+    parse_file_cq(self)
+
+
+def parse_file_cq(self):
+  # All CQ quantities are in AU
+
+  # Parse AppliedField
+  FieldData = np.genfromtxt(self.fieldFile,delimiter = ',')
+  FieldData = np.delete(FieldData,0,0)
+
+  self.time            = np.asarray(FieldData[:,0])
+  self.electricField.x = np.asarray(FieldData[:,1])
+  self.electricField.y = np.asarray(FieldData[:,2])
+  self.electricField.z = np.asarray(FieldData[:,3])
+
+  self.total_steps = len(self.time)
+  if self.total_steps:
+    self.step_size = self.time[1] - self.time[0]
+
+  # Parse Dipole (also has energy)
+  DipoleData = np.genfromtxt(self.dipoleFile,delimiter = ',')
+  DipoleData = np.delete(DipoleData,0,0)
+
+  self.energy           = np.asarray(DipoleData[:,1])
+  self.electricDipole.x = np.asarray(DipoleData[:,2])*0.393456
+  self.electricDipole.y = np.asarray(DipoleData[:,3])*0.393456
+  self.electricDipole.z = np.asarray(DipoleData[:,4])*0.393456
+
+
+
+def parse_file_gaussian(self):
     """Extract important attributes from the Gaussian realtime logfile."""
     filename = self.logfile
     lines = [line.rstrip('\n') for line in open(filename)] 
