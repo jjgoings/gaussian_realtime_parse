@@ -14,6 +14,8 @@ class RealTime(object):
         name:            A string containing primary filename
         logfile:         A string representing the Gaussian realtime log file 
         electricDipole:  Object containing x, y, z electric dipole moments (au)
+        electricQuadrupole:  Object containing xx, xy, xz, yy, yz, zz electric 
+                           quadrupole moments (au)
         magneticDipole:  Object containing x, y, z magnetic dipole moments (au)
         electricField:   Object containing x, y, z electric field strengths (au)
         magneticField:   Object containing x, y, z magnetic field strengths (au)
@@ -50,17 +52,19 @@ class RealTime(object):
                                  '143':['0'], 
                                  '144':['0']}
         elif prog == "CQ":
-          self.fieldFile    = name + "_RealTime_AppliedField.csv"
-          self.dipoleFile   = name + "_RealTime_Dipole.csv"
-          self.mullikenFile = name + "_RealTime_Mulliken.csv"
-          self.occAFile     = name + "_RealTime_OrbOcc_Alpha.csv"
-          self.occBFile     = name + "_RealTime_OrbOcc_Beta.csv"
+          self.fieldFile     = name + "_RealTime_AppliedField.csv"
+          self.dipoleFile    = name + "_RealTime_Dipole.csv"
+          self.quadrupoleFile= name + "_RealTime_Quadrupole.csv"
+          self.mullikenFile  = name + "_RealTime_Mulliken.csv"
+          self.occAFile      = name + "_RealTime_OrbOcc_Alpha.csv"
+          self.occBFile      = name + "_RealTime_OrbOcc_Beta.csv"
 
         else:
           pass # Should throw an error here
 
         self.envelope       = {}
         self.electricDipole = ElectricDipole()
+        self.electricQuadrupole = ElectricQuadrupole()
         self.magneticDipole = MagneticDipole()
         self.electricField  = ElectricField()
         self.magneticField  = MagneticField()
@@ -75,6 +79,7 @@ class RealTime(object):
         # TODO May want to look at a better way of defining which attributes are
         # arrays instead of just hard-coding them in.
         self.propertyarrays = ['electricDipole',
+                               'electricQuadrupole',
                                'magneticDipole',
                                'electricField',
                                'magneticField',
@@ -94,16 +99,17 @@ class RealTime(object):
         parse_file(self)
 
         if prog == "GAUSSIAN":
-          decode_iops(self)
+            decode_iops(self)
 
-          # Make all arrays consistent length
-          clean_data(self)
+        # Make all arrays consistent length
+        clean_data(self)
 
     def pade_tx(self,dipole_direction='x',spectra='abs',damp_const=5500,
         num_pts=10000):
         # num_pts: number of points to sample for pade transformation
 
-        if (spectra.lower() == 'abs') or (spectra.lower() == 'power'):  
+        if (spectra.lower() == 'abs') or (spectra.lower() == 'power') \
+            or (spectra.lower() == 'xabs'):  
             if dipole_direction.lower() == 'x':
                 dipole = self.electricDipole.x
                 kick_strength = self.electricField.x[0]
@@ -124,6 +130,19 @@ class RealTime(object):
                 kick_strength = self.electricField.y[0]
             elif dipole_direction.lower() == 'z':
                 dipole = self.magneticDipole.z
+                kick_strength = self.electricField.z[0]
+            else:
+                print "Not a valid direction for the dipole! Try: x,y,z "
+        elif spectra.lower() == 'xncd':
+            # I realize that 'dipole' is actually a quadrupole here...
+            if dipole_direction.lower() == 'x':
+                dipole = self.electricQuadrupole.yz
+                kick_strength = self.electricField.x[0]
+            elif dipole_direction.lower() == 'y':
+                dipole = self.electricQuadrupole.xz
+                kick_strength = self.electricField.y[0]
+            elif dipole_direction.lower() == 'z':
+                dipole = self.electricQuadrupole.xy
                 kick_strength = self.electricField.z[0]
             else:
                 print "Not a valid direction for the dipole! Try: x,y,z "
@@ -168,11 +187,6 @@ class RealTime(object):
         # d[k] = -dipole[N+k] for k in range(1,N)
         d = -dipole[N+1:2*N] 
 
-        # Old code, which works with regular Ax=b linear solver. 
-        # G[k,m] = dipole[N - m + k] for m,k in range(1,N)
-        #G = dipole[N + np.arange(1,N)[:,None] - np.arange(1,N)]
-        #b = solve(G,d,check_finite=False)
-
         # Toeplitz linear solver using Levinson recursion
         # Should be O(n^2), and seems to work well, but if you get strange
         # results you may want to switch to regular linear solver which is much
@@ -182,12 +196,21 @@ class RealTime(object):
         except ImportError:
             print "You'll need SciPy version >= 0.17.0"
             
-        # Instead, form G = (c,r) as toeplitz
-        #c = dipole[N:2*N-1]
-        #r = np.hstack((dipole[1],dipole[N-1:1:-1]))
-        b = solve_toeplitz((dipole[N:2*N-1],\
-            np.hstack((dipole[1],dipole[N-1:1:-1]))),d,check_finite=False)
-      
+        try:
+            #form G = (c,r) as toeplitz
+            c = dipole[N:2*N-1]
+            r = np.hstack((dipole[1],dipole[N-1:1:-1]))
+            b = solve_toeplitz((dipole[N:2*N-1],\
+                np.hstack((dipole[1],dipole[N-1:1:-1]))),d,check_finite=False)
+
+        # sometimes levinson fails, so do more robust (but slower) code
+        except np.linalg.LinAlgError:
+            print "Levinson failed...falling back to slower Pade solver"
+            # Old code, which works with regular Ax=b linear solver. 
+            # G[k,m] = dipole[N - m + k] for m,k in range(1,N)
+            G = dipole[N + np.arange(1,N)[:,None] - np.arange(1,N)]
+            b = solve(G,d,check_finite=False)
+              
         # Now make b Nx1 where b0 = 1 
         b = np.hstack((1,b)) 
 
@@ -200,6 +223,10 @@ class RealTime(object):
         # If you want energies greater than 2*27.2114 eV, you'll need to change
         # the default frequency range to something greater.
         self.frequency = np.arange(0,2,0.000025)
+        # For X-ray range
+        if (spectra.lower() == 'xncd') or (spectra.lower() == 'xabs'):
+        #if spectra.lower() == 'abs':
+            self.frequency = np.arange(18,25,0.0005)
         W = np.exp(-1j*self.frequency*timestep)
 
         fw_re = np.real(p(W)/q(W))
@@ -209,7 +236,7 @@ class RealTime(object):
             print "Check your dT: frequency contains NaNs and/or Infs!"
             sys.exit(0)
 
-        if spectra.lower() == 'abs':
+        if (spectra.lower() == 'abs') or (spectra.lower() == 'xabs'):
             self.fourier = \
                 np.abs((4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength))
         elif spectra.lower() == 'ecd':
@@ -218,6 +245,9 @@ class RealTime(object):
         elif spectra.lower() == 'power':
             self.fourier = \
                 (self.frequency*(fw_re**2 + fw_im**2))/(np.pi*kick_strength)
+        elif spectra.lower() == 'xncd':
+            self.fourier = \
+                np.pi*self.frequency*fw_im/(137*kick_strength)
 
     def fourier_tx(self,dipole_direction='x',spectra='abs',damp_const=150,
                     zero_pad=None,auto=False):
@@ -448,11 +478,14 @@ class RealTime(object):
 
  
 if __name__ == '__main__':
-    a = RealTime('test')
+    a = RealTime('test_x',prog='CQ')
+    a.pade_tx(dipole_direction='x',spectra='abs',damp_const=50,\
+        num_pts=30000)
     import matplotlib.pyplot as plt 
-    plt.plot(a.time,a.electricDipole.z)
-    plt.savefig('dipole.pdf')
-    #plt.show()
+    plt.plot(a.time*a.au2fs,a.electricQuadrupole.yz)
+    
+    #plt.savefig('dipole.pdf')
+    plt.show()
     
             
 

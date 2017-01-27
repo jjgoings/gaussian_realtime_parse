@@ -19,7 +19,7 @@ class Spectra(object):
         directions:     list of RT directions to consider for generating spectra
         tranformation:  string. Either 'fourier' or 'pade' for transformation.
     """
-    def __init__(self,x=None,y=None,z=None,s='abs',d=150,zp=None,auto=False,
+    def __init__(self,x=None,y=None,z=None,s='abs',d=550,zp=None,auto=False,
         num_pts=10000,trans='pade',prog="GAUSSIAN"):
         self.spectra = None
         self.frequency = None
@@ -66,7 +66,10 @@ class Spectra(object):
         self.spectra = np.zeros_like(self.__dict__[self.directions[0]].fourier)
         for q in self.directions:
             self.frequency = self.__dict__[q].frequency
-            self.spectra += self.__dict__[q].fourier
+            if self.spectra_type == 'xncd':
+                self.spectra -= self.__dict__[q].fourier
+            else:
+                self.spectra += self.__dict__[q].fourier
 
 
     def plot(self,
@@ -182,9 +185,14 @@ class Spectra(object):
 
 
 if __name__ == '__main__':
-    cadmium = Spectra(x='cd',d=1000)
+    cadmium = Spectra(x='test_x', y='test_y',s='xncd',d=50,prog='CQ',num_pts=30000)
     cadmium.peaks(9)
-    cadmium.plot(xlim=[0,20],ylim=[-0.1,10],save='cd.pdf',show=True,
-        no_yticks=True,color='green',legend='Cd')
+    cadmium.plot(xlim=[500,680],ylim=[-0.025,0.025],save='h2o2_xncd.pdf',show=False,
+        no_yticks=True,color='green',legend='H2O2')
+#    cadmium = Spectra(x='test_x', y='test_y',s='xabs',d=50,prog='CQ',num_pts=20000)
+#    cadmium.peaks(9)
+#    cadmium.plot(xlim=[500,680],ylim=[0.0,0.05],save='h2o2_xabs.pdf',show=False,
+#        no_yticks=True,color='blue',legend='H2O2')
+    
     
 

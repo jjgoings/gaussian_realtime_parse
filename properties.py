@@ -150,4 +150,73 @@ class MagneticField(object):
     def z(self,value):
         self._z = value
 
+class ElectricQuadrupole(object):
+    """An ElectricQuadrupole object contains the xx, xy, xz, yy, yz and zz 
+    unique electric quadrupole components
+
+    Attributes:
+        xx: xx component of the electric quadrupole
+        xy: xy component of the electric quadrupole
+        xz: xz component of the electric quadrupole
+        yy: yy component of the electric quadrupole
+        yz: yz component of the electric quadrupole
+        zz: zz component of the electric quadrupole
+    """
+    def __init__(self):
+        self._xx = None
+        self._xy = None
+        self._xz = None
+        self._yy = None
+        self._yz = None
+        self._zz = None
+
+    @property
+    def xx(self):
+        return self._xx
+
+    @xx.setter
+    def xx(self,value):
+        self._xx = value
+
+    @property
+    def xy(self):
+        return self._xy
+
+    @xy.setter
+    def xy(self,value):
+        self._xy = value
+
+
+    @property
+    def xz(self):
+        return self._xz
+
+    @xz.setter
+    def xz(self,value):
+        self._xz = value
+
+
+    @property
+    def yy(self):
+        return self._yy
+
+    @yy.setter
+    def yy(self,value):
+        self._yy = value
+
+    @property
+    def yz(self):
+        return self._yz
+
+    @yz.setter
+    def yz(self,value):
+        self._yz = value
+
+    @property
+    def zz(self):
+        return self._zz
+
+    @zz.setter
+    def zz(self,value):
+        self._zz = value
 

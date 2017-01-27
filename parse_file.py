@@ -12,8 +12,8 @@ def parse_file_cq(self):
   # All CQ quantities are in AU
 
   # Parse AppliedField
-  FieldData = np.genfromtxt(self.fieldFile,delimiter = ',')
-  FieldData = np.delete(FieldData,0,0)
+  FieldData = np.genfromtxt(self.fieldFile,delimiter = ',',skip_header=1)
+  #FieldData = np.delete(FieldData,0,0)
 
   self.time            = np.asarray(FieldData[:,0])
   self.electricField.x = np.asarray(FieldData[:,1])
@@ -25,13 +25,24 @@ def parse_file_cq(self):
     self.step_size = self.time[1] - self.time[0]
 
   # Parse Dipole (also has energy)
-  DipoleData = np.genfromtxt(self.dipoleFile,delimiter = ',')
-  DipoleData = np.delete(DipoleData,0,0)
+  DipoleData = np.genfromtxt(self.dipoleFile,delimiter = ',',skip_header=1)
+  #DipoleData = np.delete(DipoleData,0,0)
 
   self.energy           = np.asarray(DipoleData[:,1])
   self.electricDipole.x = np.asarray(DipoleData[:,2])*0.393456
   self.electricDipole.y = np.asarray(DipoleData[:,3])*0.393456
   self.electricDipole.z = np.asarray(DipoleData[:,4])*0.393456
+
+  # Parse quadrupole 
+  QuadrupoleData = np.genfromtxt(self.quadrupoleFile,delimiter = ',',skip_header=1)
+  #QuadrupoleData = np.delete(QuadrupoleData,0,0)
+  
+  self.electricQuadrupole.xx = np.asarray(QuadrupoleData[:,1])*0.7434701021
+  self.electricQuadrupole.xy = np.asarray(QuadrupoleData[:,2])*0.7434701021
+  self.electricQuadrupole.xz = np.asarray(QuadrupoleData[:,3])*0.7434701021
+  self.electricQuadrupole.yy = np.asarray(QuadrupoleData[:,4])*0.7434701021
+  self.electricQuadrupole.yz = np.asarray(QuadrupoleData[:,5])*0.7434701021
+  self.electricQuadrupole.zz = np.asarray(QuadrupoleData[:,6])*0.7434701021
 
 
 
@@ -215,8 +226,21 @@ def clean_data(self):
                            axis=0)
                    lengths.append(get_length(self.__dict__[x].__dict__[q]))
            except:
-               #print "Unknown data type: "+str(x)+str(q)
-               pass
+               try:
+                   # Dipoles, fields, etc., are objects and we want their x/y/z
+                   for q in ['_xx','_xy','_xz','_yy','_yz','_zz']:
+                       #FIXME Again, not sure about MMUT duplicates
+                       if (doMMUT):
+                           self.__dict__[x].__dict__[q] = \
+                               np.delete(self.__dict__[x].__dict__[q],
+                               list(range(int(self.mmut_restart)-1, 
+                               self.__dict__[x].__dict__[q].shape[0], 
+                               int(self.mmut_restart))), 
+                               axis=0)
+                       lengths.append(get_length(self.__dict__[x].__dict__[q]))
+               except:
+                   #print "Unknown data type: "+str(x)+str(q)
+                   pass
 
     self.min_length = min(lengths)
     # truncate all the arrays so they are the same length 
@@ -231,12 +255,17 @@ def truncate(self,length):
        except TypeError:
            try:
                # Dipoles, fields, etc., are objects and we want their x/y/z
-               for q in ['_x','_y','_z']:
+               for q in ['_x','_y','_z','_xx','_xy','_xz','_yy','_yz','_zz']:
                    self.__dict__[x].__dict__[q] = \
                        self.__dict__[x].__dict__[q][:length]
            except:
-               #print "Unknown data type: "+str(x)+str(q)
-               pass
+               try:
+                   for q in ['_xx','_xy','_xz','_yy','_yz','_zz']:
+                       self.__dict__[x].__dict__[q] = \
+                           self.__dict__[x].__dict__[q][:length]
+               except:
+                   #print "Unknown data type: "+str(x)+str(q)
+                   pass
 
 def decode_iops(self):
     for iop in self.iops:
