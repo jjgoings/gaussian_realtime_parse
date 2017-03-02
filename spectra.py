@@ -173,8 +173,8 @@ class Spectra(object):
             number = len(kdx)
         print "First "+str(number)+" peaks (eV) found: "
         for i in xrange(number): 
-            print "{0:.2f}".format(self.frequency[kdx][i]*27.2114),\
-                  "{0:.2f}".format(self.spectra[kdx][i])
+            print "{0:.4f}".format(self.frequency[kdx][i]*27.2114),\
+                  "{0:.4f}".format(self.spectra[kdx][i])
         
             
 

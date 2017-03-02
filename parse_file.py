@@ -241,13 +241,15 @@ def truncate(self,length):
 def decode_iops(self):
     for iop in self.iops:
         # OLD
-        #if iop == '132':
-        #    key = int(self.iops[iop][0])
-        #    if key == 0:
-        #       self.iops[iop].append('No Fock updates')
-        #    else:
-        #       self.iops[iop].append(str(key)+' Fock updates per nuclear step')
-        if iop == '134':
+        if iop == '132':
+            key = int(self.iops[iop][0])
+            if key == 0:
+               self.iops[iop].append('Ehrenfest: do 10 Microiterations')
+            elif key < 0:
+               self.iops[iop].append('Ehrenfest: Frozen Nuclei')
+            else:
+               self.iops[iop].append(str(key)+' Fock updates per nuclear step')
+        elif iop == '134':
             key = int(self.iops[iop][0])
             if key == 0:
                self.iops[iop].append('0.05 au step size')
@@ -261,10 +263,10 @@ def decode_iops(self):
                self.iops[iop].append('First call to l512')
             elif (key % 10) == 2:
                self.iops[iop].append('Not first call to l512')
-        elif iop == '132':
+        elif iop == '177':
             key = int(self.iops[iop][0])
             if key == 0:
-               self.iops[iop].append('Propagation for 15 steps')
+               self.iops[iop].append('Propagation for 50 steps')
             else:
                self.iops[iop].append('Propagation for '+str(abs(key))+' steps')
         elif iop == '136':
@@ -285,8 +287,16 @@ def decode_iops(self):
             key = int(self.iops[iop][0])
             if key == 0:
                self.iops[iop].append('No external field')
-            elif (key % 10) == 1:
+            if (key % 1000 % 10) == 1:
                self.iops[iop].append('Electric Dipole')
+            if (key % 1000 % 100)/10 == 1:
+               self.iops[iop].append('Electric Quadrupole')
+            if (key % 1000 % 1000)/100 == 1:
+               self.iops[iop].append('Magnetic Dipole')
+            if (key // 1000) == 1:
+               self.iops[iop].append('Velocity Gauge')
+            else:
+               self.iops[iop].append('Length Gauge')
         elif iop == '139':
             key = int(self.iops[iop][0])
             if key == 0:
@@ -295,12 +305,17 @@ def decode_iops(self):
                self.iops[iop].append('')
         elif iop == '140':
             key = int(self.iops[iop][0])
-            self.iops[iop].append('Pop. analysis (N/A)')
+            if key == -1:
+                self.iops[iop].append('Overlay 6 Pop at very end')
+            elif key == 0:
+                self.iops[iop].append('Overlay 6 Pop every 50 steps')
+            else:
+                self.iops[iop].append('Overlay 6 Pop every '+str(key)+' steps')
         elif iop == '141':
             key = int(self.iops[iop][0])
-            if key%10 == 0:
+            if key == -1:
                self.iops[iop].append('No additional print')
-            elif key%10 == 1:
+            elif (key % 10) == 1:
                self.iops[iop].append('Print orbital occu. num')
             elif (key % 10) == 2:
                self.iops[iop].append('Print orbital energy + orbital occu. num')
@@ -318,6 +333,8 @@ def decode_iops(self):
             key = int(self.iops[iop][0])
             if key <= 0:
                self.iops[iop].append('Do not restart MMUT')
+            elif key == 0:
+               self.iops[iop].append('Restart MMUT every 50 steps')
             else:
                self.iops[iop].append('Restart MMUT every '+str(key)+' steps')
         elif iop == '144':

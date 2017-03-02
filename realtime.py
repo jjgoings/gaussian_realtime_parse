@@ -148,7 +148,7 @@ class RealTime(object):
         # skip is integer to skip every n-th value
         # skip = 1 would not skip any values, but skip = 10 would only
         # consider every tenth value
-        skip = 1 
+        skip = 4 
         dipole = dipole - dipole[0]
         dipole = dipole[::skip]
         damp = np.exp(-(self.time-self.time[0])/float(damp_const))
@@ -211,7 +211,8 @@ class RealTime(object):
 
         if spectra.lower() == 'abs':
             self.fourier = \
-                np.abs((4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength))
+                -((4.0*self.frequency*fw_im)/(kick_strength*damp_const))
+                #-((4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength))
         elif spectra.lower() == 'ecd':
             self.fourier = \
                 (17.32*fw_re)/(np.pi*kick_strength)
@@ -327,8 +328,8 @@ class RealTime(object):
     def test(self):
         self.check_energy()
         self.check_iops()
-        pass
-
+        pass       
+ 
     def check_energy(self):
         dE = abs(max(self.energy) - min(self.energy)) 
         t_maxE = self.time[np.argmax(self.energy)]
@@ -370,10 +371,10 @@ class RealTime(object):
             print "  logfile header showing ", self.step_size
             print "  logfile showing        ", self.time[2] - self.time[1]
         # Check the total propagation steps
-        if ((self.total_steps == 15) \
-           and (int(self.iops['132'][0]) == 0)) or\
-            (self.total_steps == abs(int(self.iops['132'][0]))):
-                print "Number MMUT steps     [OK]: ", self.total_steps, " steps"
+        if ((self.total_steps == 50) \
+           and (int(self.iops['177'][0]) == 0)) or\
+            (self.total_steps == abs(int(self.iops['177'][0]))):
+                print "Number total steps    [OK]: ", self.total_steps, " steps"
         else:
             print "Inconsistent propagation time: "
             print "  IOps:                  ", self.iops['132'][1]
@@ -385,6 +386,7 @@ class RealTime(object):
         elif (self.envelope and int(self.iops['138'][0]) != 0):
             print "Field on:             [OK]"
             self.check_field()
+            print "Field using: ", ' '.join(self.envelope['Terms'])
         else:
             print "Inconsistency in field:"
             print "IOps:                     ", self.iops['138'] 
@@ -395,7 +397,15 @@ class RealTime(object):
         else:
             print "Inconsistency in orthonormality"
             print "IOps:                      ", self.iops['136'][1]
-            print "logfile showing:           ", self.iops['136'][1]
+            print "logfile showing:           ", self.orthonorm
+        # Check EM perturbation and Gauge
+        if [self.envelope['Gauge'] in x for x in self.iops['138']]:
+            print "Gauge                 [OK]:", self.envelope['Gauge']
+        else:
+            print "Inconsistency in gauge"
+            print "IOps:                      ", self.iops['138']
+            print "logfile showing:           ", self.envelope['Gauge']
+       
 
     def expected_field(self,component):
         Time  = self.time
