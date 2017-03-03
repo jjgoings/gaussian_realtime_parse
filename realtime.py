@@ -148,7 +148,7 @@ class RealTime(object):
         # skip is integer to skip every n-th value
         # skip = 1 would not skip any values, but skip = 10 would only
         # consider every tenth value
-        skip = 4 
+        skip = 1 
         dipole = dipole - dipole[0]
         dipole = dipole[::skip]
         damp = np.exp(-(self.time-self.time[0])/float(damp_const))
@@ -329,6 +329,9 @@ class RealTime(object):
         self.check_energy()
         self.check_iops()
         pass       
+
+    def test_rabi(self):
+        
  
     def check_energy(self):
         dE = abs(max(self.energy) - min(self.energy)) 
