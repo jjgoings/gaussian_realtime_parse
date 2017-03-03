@@ -114,11 +114,11 @@ def parse_file_gaussian(self):
             self.step_size = float(lines[idx].split()[3])
         elif line[1:33] == '     Orthonormalization method =':
             self.orthonorm = lines[idx].split()[3]
-        elif line[1:27] == 'Alpha occupation numbers:': 
+        elif line[1:34] == 'Alpha orbital occupation numbers:': 
             #FIXME ONLY FOR H2+ RABI
-            HOMO.append(float(lines[idx+2].split()[1])) 
+            HOMO.append(float(lines[idx+1].split()[0])) 
             try:
-                LUMO.append(float(lines[idx+2].split()[2])) 
+                LUMO.append(float(lines[idx+1].split()[1])) 
             except IndexError:
                 LUMO.append(0.0) 
         elif line[1:7] == 'Time =':

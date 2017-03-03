@@ -331,8 +331,22 @@ class RealTime(object):
         pass       
 
     def test_rabi(self):
-        
- 
+        # Note: for STO-3G H2+ ONLY
+        # Load and reshape important vectors so we can combine in single array
+        # in order to dump to CSV
+        N = len(self.time)
+        time   = self.time.reshape(N,1)
+        energy = self.energy.reshape(N,1)
+        Ez   = self.electricDipole.z.reshape(N,1)
+        HOMO = self.HOMO.reshape(N,1)
+        LUMO = self.LUMO.reshape(N,1)
+        Total = np.concatenate((time,energy,Ez,HOMO,LUMO),axis=1)
+        np.savetxt('rabi-analysis.csv', Total, fmt='%.8f',delimiter=',',\
+                   header=" Time (au), Ener. (au), Ez  (au), HOMO Occ, LUMO Occ")
+
+        pass
+
+
     def check_energy(self):
         dE = abs(max(self.energy) - min(self.energy)) 
         t_maxE = self.time[np.argmax(self.energy)]
