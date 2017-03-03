@@ -1,1 +1,4 @@
 *.pyc
+*.exe
+*.log
+*.chk
