@@ -347,12 +347,12 @@ class RealTime(object):
                 self.expected_field('Ey'),atol=tol)
             print "Ez field matches:    ", np.allclose(self.electricField.z,
                 self.expected_field('Ez'),atol=tol)
-           # print "Bx field matches: ", np.allclose(self.magneticField.x,
-           #     self.expected_field('Bx'),atol=tol)
-           # print "By field matches: ", np.allclose(self.magneticField.y,
-           #     self.expected_field('By'),atol=tol)
-           # print "Bz field matches: ", np.allclose(self.magneticField.z,
-           #     self.expected_field('Bz'),atol=tol)
+            print "Bx field matches:    ", np.allclose(self.magneticField.x,
+                self.expected_field('Bx'),atol=tol)
+            print "By field matches:    ", np.allclose(self.magneticField.y,
+                self.expected_field('By'),atol=tol)
+            print "Bz field matches:    ", np.allclose(self.magneticField.z,
+                self.expected_field('Bz'),atol=tol)
         else:
             print "No external field applied"
 
@@ -444,9 +444,7 @@ class RealTime(object):
                          ((Time[idx]-TOn)/TMax)*np.cos(OmegT[idx])
         elif self.envelope['Envelope'] == 'Gaussian':
             idx = np.where((Time >= TOn) & (Time < TOff))
-            #FIXME: Sigma is hard-coded for testing...need to print it in the 
-            # output and then search for it during parsing.
-            Sigma = 0.01
+            Sigma = self.envelope['Sigma'] 
             TCntr = np.sqrt(np.log(1000.0))/Sigma
             field[idx] = self.envelope[component]*\
                          np.cos(OmegT[idx])*\

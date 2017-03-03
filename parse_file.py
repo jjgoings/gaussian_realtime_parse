@@ -62,7 +62,7 @@ def parse_file_gaussian(self):
         r = re.findall(r'5/.*/12',line)
         if line[1:26] == 'External field Parameters':
             self.envelope['Field']     = True
-            for jdx in range(1,15):
+            for jdx in range(1,16):
                 # control for newlines (length zero)
                 #print lines[idx+jdx].split()
                 if not len(lines[idx+jdx]):
@@ -83,6 +83,8 @@ def parse_file_gaussian(self):
                       self.envelope['By']  = float(lines[idx+jdx].split()[2]) # au
                 elif 'Bz' in lines[idx+jdx].split()[0]:
                       self.envelope['Bz']  = float(lines[idx+jdx].split()[2]) # au
+                elif 'Range' in lines[idx+jdx].split()[0]:
+                      self.envelope['Sigma']  = float(lines[idx+jdx].split()[5]) # au
                 elif 'Frequency' in lines[idx+jdx].split()[0]:
                       self.envelope['Frequency']  = float(lines[idx+jdx].split()[2]) # au
                 elif 'Phase' in lines[idx+jdx].split()[0]:
