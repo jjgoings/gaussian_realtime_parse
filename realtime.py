@@ -211,8 +211,8 @@ class RealTime(object):
 
         if spectra.lower() == 'abs':
             self.fourier = \
-                -((4.0*self.frequency*fw_im)/(kick_strength*damp_const))
-                #-((4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength))
+                #-((4.0*self.frequency*fw_im)/(kick_strength*damp_const))
+                ((4.0*self.frequency*np.pi*fw_im)/(3.0*137*kick_strength))
         elif spectra.lower() == 'ecd':
             self.fourier = \
                 (17.32*fw_re)/(np.pi*kick_strength)
